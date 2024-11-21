@@ -1,0 +1,27 @@
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Driver } from './Driver';
+
+@Entity('reviews')
+export class Review {
+    @PrimaryGeneratedColumn()
+    id!: number;
+
+    @Column('int')
+    rating!: number;
+
+    @Column('text')
+    comment!: string;
+
+    @ManyToOne(() => Driver, (driver) => driver.reviews, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'driver_id' })
+    driver: Driver;
+
+    constructor(id: number, rating: number, comment: string, driver: Driver) {
+        this.id = id;
+        this.rating = rating;
+        this.comment = comment;
+        this.driver = driver;
+    }
+
+}
+

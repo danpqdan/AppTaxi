@@ -1,11 +1,15 @@
 {
   "compilerOptions": {
+    "target": "ES6",
     "module": "CommonJS",
-    "target": "ESNext",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist",       // Pasta de saída para os arquivos compilados
+    "outDir": "./dist",
+    "strict": true,
+    "experimentalDecorators": true,  // Habilita o uso de decoradores
+    "emitDecoratorMetadata": true,   // Garante que os metadados sejam emitidos
 
   },
   "include": ["src/**/*"],
