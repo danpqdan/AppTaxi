@@ -1,13 +1,15 @@
 services:
   frontend:
     build:
-      context: ./frontend # Caminho para o diretório do front-end
+      context: ./frontend
     ports:
-      - "80:80" # Mapeia a porta 3000 do container para a 3000 do host
+      - "80:80"
     depends_on:
       - backend
     environment:
       - REACT_APP_API_URL=http://backend:8080
+    command: ["npm", "run", "dev"]
+
 
   backend:
     build:
@@ -17,7 +19,7 @@ services:
     environment:
       - NODE_ENV=production
     volumes:
-      - ./backend
+      - ./backend:/app
     depends_on:
       - db
     networks:
@@ -29,10 +31,10 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: App_Taxi
-      MYSQL_USER: root
+      MYSQL_USER: admin
       MYSQL_PASSWORD: root
     ports:
-      - "3306:3306"
+      - "3307:3306"  #Porta padrão 3307
     volumes:
       - mysql-data:/var/lib/mysql
     networks:

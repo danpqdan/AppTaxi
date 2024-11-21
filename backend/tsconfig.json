@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES6",
-    "module": "ESNext",
-    "moduleResolution": "Node",
+    "module": "CommonJS",
+    "target": "ESNext",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",       // Pasta de saída para os arquivos compilados
+
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*"],
+  // "exclude": ["node_modules"]
+
 }

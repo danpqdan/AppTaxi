@@ -1,17 +1,59 @@
-import mysql from 'mysql2/promise';
+import mysql, { Connection } from 'mysql2';
 
-async function connectToDatabase() {
-  const connection = await mysql.createConnection({
-    host: 'localhost', // ou o nome do contêiner se você estiver usando Docker Compose
+export function connection() {
+  return mysql.createConnection({
+    host: 'db',
+    port: 3306,
     user: 'root',
-    password: 'rootpassword',  // Senha do usuário root
-    database: 'testdb',  // O banco de dados configurado
+    password: 'root',
+    database: 'App_Taxi'
   });
-
-  const [rows] = await connection.execute('SELECT * FROM usuarios');
-  console.log(rows);
-
-  await connection.end();
 }
 
-connectToDatabase().catch(console.error);
+const dbConnection = connection();
+
+dbConnection.connect((err) => {
+  if (err) {
+    console.error('Connection error: ', err.stack);
+    return;
+  }
+  console.log('Connected to the database');
+
+  const createDriverTable = `
+    CREATE TABLE IF NOT EXISTS Driver (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      NAME VARCHAR(255) NOT NULL,
+      DESCRIPTION VARCHAR(255),
+      CAR VARCHAR(255),
+      TAX FLOAT,
+      KM_LOWEST INT
+    );
+  `;
+
+  const createRatingTable = `
+    CREATE TABLE IF NOT EXISTS Rating (
+      RATING INT,
+      RATING_DESC VARCHAR(255),
+      DRIVER_ID INT,
+      FOREIGN KEY (DRIVER_ID) REFERENCES Driver(ID) ON DELETE CASCADE
+    );
+  `;
+
+  dbConnection.query(createDriverTable, (err, results) => {
+    if (err) {
+      console.error('Error creating Driver table: ', err);
+    } else {
+      console.log('Driver table created successfully!');
+    }
+  });
+
+  dbConnection.query(createRatingTable, (err, results) => {
+    if (err) {
+      console.error('Error creating Rating table: ', err);
+    } else {
+      console.log('Rating table created successfully!');
+    }
+  });
+
+  dbConnection.end();
+});
