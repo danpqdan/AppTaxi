@@ -1,0 +1,23 @@
+# Dockerfile para o front-end React
+FROM node:18-alpine
+
+# Defina o diretório de trabalho dentro do container
+WORKDIR /app
+
+# Copie o package.json e o package-lock.json para o container
+COPY package*.json ./
+
+# Instale as dependências
+RUN npm install
+
+# Copie o restante dos arquivos da aplicação
+COPY . .
+
+# Construa a aplicação React para produção
+RUN npm run build
+
+# Exponha a porta que o front-end irá escutar
+EXPOSE 80
+
+# Comando para iniciar o front-end
+CMD ["npm", "start"]
