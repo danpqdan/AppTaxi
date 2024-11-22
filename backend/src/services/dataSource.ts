@@ -1,6 +1,8 @@
 import { DataSource } from 'typeorm';
+import { Client } from '../models/Client';
 import { Driver } from '../models/Driver';
 import { Review } from '../models/Review';
+import { Riders } from '../models/Riders';
 
 export const dataSource = new DataSource({
   type: 'mysql',
@@ -12,7 +14,7 @@ export const dataSource = new DataSource({
   charset: 'utf8mb4_unicode_ci',
   synchronize: true,
   logging: true,
-  entities: [Driver, Review],
+  entities: [Driver, Review, Client, Riders],
 });
 
 export const startServer = async () => {
