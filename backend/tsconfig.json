@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES6",
+    "baseUrl": "src",
+    "target": "ESNext",
     "module": "CommonJS",
     "moduleResolution": "node",
     "esModuleInterop": true,
@@ -10,9 +11,8 @@
     "strict": true,
     "experimentalDecorators": true,  // Habilita o uso de decoradores
     "emitDecoratorMetadata": true,   // Garante que os metadados sejam emitidos
-
+    
   },
-  "include": ["src/**/*"],
-  // "exclude": ["node_modules"]
+  "include": ["src/**/*"]
 
 }
