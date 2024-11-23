@@ -6,35 +6,32 @@ import { Driver } from "./Driver";
 @Entity('rides')
 export class Riders {
     @PrimaryGeneratedColumn()
-    id: number;
+    id!: number;
     @Column('datetime')
     date: Date;
-    @Column('string')
+    @Column()
     origin: string;
-    @Column('string')
+    @Column()
     destination: string;
     @Column('int')
     distance: number;
-    @Column('string')
+    @Column()
     duration: string;
     @Column('decimal')
-    value: number;
+    value?: number;
     @ManyToOne(() => Client, (cliente) => cliente.customer_id, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'client_id' })
     client: Client;
     @OneToOne(() => Driver, (driver) => driver.id, { onDelete: 'NO ACTION' })
     @JoinColumn({ name: 'driver_id' })
-    driver: Driver;
+    driver?: Driver;
 
-    constructor(id: number, origin: string, destination: string, distance: number, duration: string, value: number, driver: Driver, client: Client) {
-        this.id = id;
+    constructor(origin: string, destination: string, distance: number, duration: string, client: Client) {
         this.date = new Date(format(new Date(), 'dd-MM-yyyy HH:mm:ss'));
         this.origin = origin;
         this.destination = destination;
         this.distance = distance;
         this.duration = duration;
-        this.driver = driver;
-        this.value = value;
         this.client = client;
     }
 }

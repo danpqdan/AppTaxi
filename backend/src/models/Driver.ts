@@ -1,6 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, EntityRepository } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Review } from './Review';
-import { dataSource } from '../services/dataSource';
 
 @Entity('drivers')  // Nome da tabela no banco de dados
 export class Driver {
@@ -10,24 +9,23 @@ export class Driver {
     @Column()
     name: string;
 
-    @Column({ type: 'text', nullable: true })
-    description: string;
+    @Column({ type: 'text' })
+    description?: string | "";
 
     @Column()
     car: string;
 
-    @Column('decimal')
+    @Column('double', { scale: 2 })
     tax: number;
 
     @Column('int')
     km_lowest: number;
 
     @OneToMany(() => Review, (review) => review.driver, { cascade: true })
-    reviews!: Review[];
+    reviews?: Review[];
 
 
-    constructor(id: number, name: string, description: string, car: string, tax: number, km_lowest: number) {
-        this.id = id;
+    constructor(name: string, description: string, car: string, tax: number, km_lowest: number) {
         this.name = name;
         this.description = description;
         this.car = car;

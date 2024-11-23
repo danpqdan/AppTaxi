@@ -12,9 +12,9 @@ export class Review {
     @Column('text')
     comment!: string;
 
-    @ManyToOne(() => Driver, (driver) => driver.reviews, { onDelete: 'CASCADE' })
+    @ManyToOne(() => Driver, (driver) => driver.reviews)
     @JoinColumn({ name: 'driver_id' })
-    driver: Driver;
+    driver!: Driver;
 
     constructor(id: number, rating: number, comment: string, driver: Driver) {
         this.id = id;
