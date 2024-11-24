@@ -1,7 +1,18 @@
-async function getCoordinates(address: string, apiKey: string) {
-    const encodedAddress = encodeURIComponent(address);  // Codifica o endereço para uso na URL
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
+import { Coordinates } from '../controllers/RiderController'
 
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+export const keyApi = process.env.GOOGLE_API_KEY;
+
+
+
+export async function getCoordinates(address: string) {
+    if (!keyApi) {
+        throw new Error('Chave da API do Google não encontrada. Verifique o arquivo .env');
+    }
+
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${keyApi}`;
     try {
         const response = await fetch(url);
         const data = await response.json();
@@ -10,9 +21,10 @@ async function getCoordinates(address: string, apiKey: string) {
             const location = data.results[0].geometry.location;
             console.log('Latitude:', location.lat);
             console.log('Longitude:', location.lng);
-            return location; 
+            return { lat: location.lat, lng: location.lng };
         } else {
-            throw new Error('Erro ao obter coordenadas');
+            console.error(`Erro na API de Geocodificação: ${data.status}`);
+            return null;
         }
     } catch (error) {
         console.error('Erro ao chamar a API de Geocoding:', error);
@@ -21,16 +33,15 @@ async function getCoordinates(address: string, apiKey: string) {
 
 
 
-async function getDirections(
+export async function getDirections(
     origin: { lat: number; lng: number },
     destination: { lat: number; lng: number },
-    apiKey: string
 ): Promise<any> {
     // Formata as coordenadas para passar na URL
     const originLatLng = `${origin.lat},${origin.lng}`;
     const destinationLatLng = `${destination.lat},${destination.lng}`;
 
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originLatLng}&destination=${destinationLatLng}&key=${apiKey}`;
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originLatLng}&destination=${destinationLatLng}`;
 
     try {
         const response = await fetch(url);
@@ -38,8 +49,7 @@ async function getDirections(
 
         if (data.status === "OK") {
             console.log('Directions:', data.routes[0].legs[0]);
-            const route = data.routes[0].legs[0];
-            return route
+            return data.routes[0].legs[0];
         } else {
             throw new Error('Erro ao obter direções');
         }
@@ -48,26 +58,63 @@ async function getDirections(
     }
 }
 
+export async function setParametersForSearch(coordinates: Coordinates): Promise<any> {
+    const apiUrl = 'https://routes.googleapis.com/directions/v2:computeRoutes';
+    const body = {
+        origin: {
+            location: {
+                latLng: {
+                    latitude: coordinates.origin.lat,
+                    longitude: coordinates.origin.lng,
+                },
+            },
+        },
+        destination: {
+            location: {
+                latLng: {
+                    latitude: coordinates.destination.lat,
+                    longitude: coordinates.destination.lng,
+                },
+            },
+        },
+        travelMode: 'DRIVE',
+        routingPreference: 'TRAFFIC_AWARE',
+        computeAlternativeRoutes: false,
+        routeModifiers: {
+            avoidTolls: false,
+            avoidHighways: false,
+            avoidFerries: false,
+        },
+        languageCode: 'en-US',
+        units: 'IMPERIAL',
+    };
 
-export async function returnClient(adress: [string, string]) {
-    const apiKey = 'string'
-    const coordinatesPromises = adress.map(address => getCoordinates(address, apiKey));
-    const coordinates = await Promise.all(coordinatesPromises);
-    const [originCoordinates, destinationCoordinates] = coordinates;
+    // Cabeçalhos da requisição
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': keyApi!,
+        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
+    };
 
-    console.log('Coordenadas de origem:', originCoordinates);
-    console.log('Coordenadas de destino:', destinationCoordinates);
 
-    getDirections(originCoordinates, destinationCoordinates, apiKey)
-        .then((resultGoodSearch) => {
-            if (resultGoodSearch) {
-                console.log('Distância:', resultGoodSearch.distance.text);
-                console.log('Duração:', resultGoodSearch.duration.text);
-
-            }
-        }).catch((err) => {
-            console.log(err)
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body),
         });
+        if (!response.ok) {
+            throw new Error(`Erro na requisição: ${response.statusText}`);
+        }
+        const data = await response.json();
+        const route = data.routes[0];
+        const distance = route.distanceMeters;
+        const duration = route.duration;
+
+        return { distance, duration, data }
+    } catch (error) {
+        console.error('Erro ao chamar API do Google Maps:', error);
+    }
 }
 
 
