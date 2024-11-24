@@ -1,102 +1,101 @@
-import { DataSource } from 'typeorm';
-import { Driver } from '../models/Driver'; // Seu modelo Driver
+import { SuccessResponse } from '../services/exceptionHandler/exceptionRequest';
+import { Driver } from '../models/Driver';
 import { Review } from '../models/Review';
-import { ArrayDriversTest, testeDriver } from './testeDriverModels';
-import { testeReview } from './testeReviewModel';
+import { dataSource } from '../services/DataSource';
+import { DriverServices } from '../services/DriverService';
+import { ReviewService } from '../services/ReviewService';
+import { ArrayDriversTest } from './testeDriverModels';
 
 describe('testeDriver e testeReview', () => {
-    let dataSource: DataSource;
-
-    // Configura o banco de dados de teste antes de rodar os testes
     beforeAll(async () => {
-        dataSource = new DataSource({
-            type: 'sqlite',
-            database: ':memory:',
-            synchronize: true,
-            logging: false,
-            entities: [Driver, Review],
-        });
-
         await dataSource.initialize();
+        console.log('DataSource initialized for testing');
+
     });
 
-    // Limpa os dados após cada teste
+
+
+    // // Limpa os dados após cada teste
     afterEach(async () => {
-        const driverRepository = dataSource.getRepository(Driver);
-        const reviewRepository = dataSource.getRepository(Review);
-        await driverRepository.clear(); // Limpa os dados de Driver
-        await reviewRepository.clear(); // Limpa os dados de Review
+
+
+        await dataSource.getRepository(Driver).clear;
+        await dataSource.getRepository(Review).clear;
     });
 
     // Fecha a conexão após os testes
     afterAll(async () => {
         await dataSource.destroy();
+        console.log('DataSource destroyed after tests');
     });
 
     it('deve adicionar Homer Simpson com sucesso', async () => {
-        // Chama o método que você quer testar para o Driver
-        await testeDriver(dataSource);
 
-        const driverRepository = dataSource.getRepository(Driver);
-        const homer = await driverRepository.findOneBy({ name: 'Homer Simpson' });
-        console.log(homer)
+        const createdDriver = await DriverServices.createDriver(ArrayDriversTest[0]);
+        expect(createdDriver).toBeDefined();
+        expect(createdDriver!.name).toBe('Homer Simpson');
+        console.log('Driver inserido:', createdDriver); // Verifique o que foi retornado
+
+        const homer = await DriverServices.findByName("Homer Simpson");
 
         // Verifica se o Homer foi adicionado corretamente
         expect(homer).toBeDefined();
         expect(homer!.name).toBe('Homer Simpson');
-        expect(decodeURIComponent(homer!.description)).toContain('Olá! Sou o Homer');
+        expect(homer!.description).toContain('Olá! Sou o Homer');
         expect(homer!.car).toBe('Plymouth Valiant 1973 rosa e enferrujado');
-        expect(homer!.tax).toBe(2.5);
+        expect(homer!.tax).toBe(2.50);
+
     });
 
     it('deve adicionar múltiplos motoristas com sucesso', async () => {
-        const driverRepository = dataSource.getRepository(Driver);
-
-        // Cria os motoristas em massa
-        await driverRepository.save(ArrayDriversTest);
-
+        // Adiciona motoristar em massa
         // Verifica se cada motorista foi adicionado corretamente
         for (const driverData of ArrayDriversTest) {
-            const driver = await driverRepository.findOneBy({ name: driverData.name });
-            console.log('Motorista inserido:', driver);
+            await DriverServices.createDriver(driverData); // Adiciona cada motorista
 
+        }
+        for (const driverData of ArrayDriversTest) {
+            const driver = await DriverServices.findByName(driverData.name);
+            console.log('Motorista inserido:', driver);
             expect(driver).toBeDefined();
             expect(driver!.name).toBe(driverData.name);
             expect(decodeURIComponent(driver!.description)).toContain(driverData.description);
             expect(driver!.car).toBe(driverData.car);
             expect(driver!.tax).toBe(driverData.tax);
         }
+        const allDrivers = await DriverServices.getAll();
+        expect(allDrivers.length).toBe(ArrayDriversTest.length);
     });
 
 
     it('deve adicionar um Review para Homer Simpson com sucesso', async () => {
-        const driverRepository = dataSource.getRepository(Driver);
-        const reviewRepository = dataSource.getRepository(Review);
-        await driverRepository.save(ArrayDriversTest);
+        await DriverServices.createDriver(ArrayDriversTest[0]);
+        await DriverServices.createDriver(ArrayDriversTest[1]);
 
-        const homer = await driverRepository.findOneBy({ name: 'Homer Simpson' });
+        const homer = await DriverServices.findById(1);
+        const toretto = await DriverServices.findById(2);
         // Verifica se o homer realmente foi encontrado
         expect(homer).toBeDefined();
+        expect(toretto).toBeDefined();
 
-        const arrayReviewTest = new Review(0, 2, 'Motorista simpático, mas errou o caminho 3 vezes.', homer!)
+        const arrayReviewTest = new Review(0, 2, 'Motorista simpático, mas errou o caminho 3 vezes.', homer)
         console.log(arrayReviewTest)
         // função de serviço que realiza a verificação, salva e retorna o review
         // Cria a avaliação (Review) com o motorista Homer
-        const review = await testeReview(dataSource, arrayReviewTest);
-        console.log(review);
+        const review = await ReviewService.createReview(arrayReviewTest);
+        expect(review).toBeInstanceOf(SuccessResponse);
+        expect(review.message).toBe('Review criada com sucesso!');
 
-        const savedReview = await reviewRepository.findOne({
-            where: { id: review?.id },
-            relations: ['driver'],
-        });
-        // Verifica se a revisão foi salva corretamente
+        const savedReview = await ReviewService.getAllReview(homer);
         expect(savedReview).not.toBeNull(); // Assegura que o review foi encontrado
         expect(savedReview).toBeDefined();
-        expect(savedReview!.rating).toBe(2);
-        expect(savedReview!.comment).toBe('Motorista simpático, mas errou o caminho 3 vezes.');
-        expect(savedReview!.driver.id).toBe(homer!.id);
+        savedReview!.forEach((review) => {
+            expect(review).toBeInstanceOf(Review);
+            expect(savedReview!.some((review) => review.comment === 'Motorista simpático, mas errou o caminho 3 vezes.')).toBe(true);
+            expect(savedReview!.some((review) => review.id === homer!.id)).toBe(true);
+        });
+
+
     });
 
-
-
-});
+})
