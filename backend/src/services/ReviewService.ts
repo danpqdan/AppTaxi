@@ -19,7 +19,7 @@ export class ReviewService {
             const savedReview = await this.reviewRepository.save(review);
             const pacthReview = await DriverServices.patchDriverWithReview(review);
             console.log(savedReview, pacthReview);
-            return new SuccessResponse('Review criada com sucesso!')
+            return new SuccessResponse()
         } catch (error) {
             console.log(error)
             throw new ErrorInvalidRequest

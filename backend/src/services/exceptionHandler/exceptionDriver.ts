@@ -30,11 +30,11 @@ export class DistanceInvalid extends ExceptionConfigHandler {
     }
 }
 
-export class NotFoundCollectionsDriver extends ExceptionConfigHandler {
+export class InvalidDriver extends ExceptionConfigHandler {
     constructor() {
         super(
-            "NOT_FOUND",
-            "No drivers found",
+            "INVALID_DRIVER",
+            "Driver invalid",
             400
         )
     }

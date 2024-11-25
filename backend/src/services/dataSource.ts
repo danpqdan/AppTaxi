@@ -1,9 +1,9 @@
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm'; // Certifique-se de importar DataSource corretamente
+import { Customer } from '../models/Customer';
 import { Driver } from '../models/Driver';
 import { Review } from '../models/Review';
 import { Riders } from '../models/Riders';
-import { Client } from '../models/Costumer';
 
 dotenv.config();
 const isTestEnv = process.env.NODE_ENV === 'test';
@@ -15,10 +15,10 @@ export const dataSource = new DataSource({
   username: isTestEnv ? process.env.TEST_DB_USERNAME : process.env.DB_USERNAME,
   password: isTestEnv ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD,
   database: isTestEnv ? process.env.TEST_DB_NAME : process.env.DB_NAME,
-  charset: process.env.DB_CHARSET || 'utf8mb4_unicode_ci',
+  charset: process.env.DB_CHARSET || 'uwwwtf8mb4_unicode_ci',
   synchronize: true,
   logging: !!isTestEnv,
-  entities: [Driver, Review, Riders, Client],
+  entities: [Driver, Review, Riders, Customer],
   // Usar dropSchema apenas para o ambiente de testes
   dropSchema: !!isTestEnv,
 });

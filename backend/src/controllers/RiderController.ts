@@ -1,8 +1,7 @@
-import { Costumer } from "../models/Costumer";
 import { Riders } from "../models/Riders";
-import { RidersService } from "../services/RidersService";
-import { getCoordinates, setParametersForSearch } from "../services/FetchGoogle";
 import { DriverServices } from "../services/DriverService";
+import { getCoordinates, setParametersForSearch } from "../services/FetchGoogle";
+import { RidersService } from "../services/RidersService";
 
 export interface Coordinates {
     origin: { lat: number, lng: number };
@@ -39,7 +38,7 @@ export class RidersController {
 
 
 
-    static async returnRouteRequest(coordinates: Coordinates, CostumerRequest: Costumer, origin: string, destination: string): Promise<any> {
+    static async returnRouteRequest(coordinates: Coordinates, origin: string, destination: string): Promise<any> {
         const dataReturnGoogle = await setParametersForSearch(coordinates);
         const route = dataReturnGoogle.routes[0];
         const distance = route.legs[0].distanceMeters;
@@ -50,7 +49,6 @@ export class RidersController {
             destination,
             distance,
             duration,
-            CostumerRequest,
         )
         const rider = await RidersService.createRider(newTrip);
         const driversFind = await DriverServices.findForKmLowest(rider);

@@ -3,7 +3,7 @@ export class RiderNotFound extends ExceptionConfigHandler {
     constructor() {
         super(
             "NO_RIDES_FOUND",
-            "No register find",
+            "No register found",
             404
         )
     }

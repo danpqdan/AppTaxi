@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { Costumer } from "./Costumer";
+import { Customer } from "./Customer";
 import { Driver } from "./Driver";
 
 @Entity('rides')
@@ -19,9 +19,9 @@ export class Riders {
     duration: string;
     @Column('decimal')
     value?: number;
-    @ManyToOne(() => Costumer, (costumer) => costumer.customer_id, { onDelete: 'CASCADE' })
+    @ManyToOne(() => Customer, (customer) => customer.customer_id, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'costumer_id' })
-    costumerId?: Costumer;
+    costumerId?: Customer;
     @OneToOne(() => Driver, (driver) => driver.id, { onDelete: 'NO ACTION' })
     @JoinColumn({ name: 'driver_id' })
     driver?: Driver;

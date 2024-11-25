@@ -1,11 +1,10 @@
-import { Riders } from "models/Riders";
+import { Riders } from "../models/Riders";
+import { LessThanOrEqual } from "typeorm";
 import { Driver } from "../models/Driver";
 import { Review } from "../models/Review";
 import { dataSource } from "./DataSource";
 import { DriverNotFound, DriverNotFoundWithId } from "./exceptionHandler/exceptionDriver";
 import { ErrorInter, ErrorInvalidRequest } from "./exceptionHandler/exceptionRequest";
-import { promises } from "dns";
-import { LessThanOrEqual } from "typeorm";
 
 export class DriverServices {
     static driverRepository = dataSource.getRepository(Driver)
@@ -120,4 +119,5 @@ export class DriverServices {
             throw new ErrorInter
         }
     }
+
 }

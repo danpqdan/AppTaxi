@@ -1,6 +1,7 @@
 import { Coordinates } from '../controllers/RiderController'
 
 import * as dotenv from 'dotenv';
+import { ErrorInvalidRequest } from './exceptionHandler/exceptionRequest';
 dotenv.config();
 
 export const keyApi = process.env.GOOGLE_API_KEY;
@@ -89,32 +90,40 @@ export async function setParametersForSearch(coordinates: Coordinates): Promise<
         units: 'IMPERIAL',
     };
 
-    // Cabeçalhos da requisição
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': keyApi!,
         'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
     };
 
-
     try {
         const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: headers,
+            headers,
             body: JSON.stringify(body),
         });
-        if (!response.ok) {
-            throw new Error(`Erro na requisição: ${response.statusText}`);
-        }
-        const data = await response.json();
-        const route = data.routes[0];
-        const distance = route.distanceMeters;
-        const duration = route.duration;
 
-        return { distance, duration, data }
+        if (!response.ok) {
+            throw new Error(`Erro na requisição: ${response.statusText} (status: ${response.status})`);
+        }
+
+        const data = await response.json();
+
+        const routes = data.routes;
+        if (!routes || routes.length === 0) {
+            throw new ErrorInvalidRequest;
+        }
+        console.log(routes)
+        console.log(data)
+        return routes && data;
+
+
     } catch (error) {
-        console.error('Erro ao chamar API do Google Maps:', error);
+        console.error(`Erro ao processar a requisição: ${(error as Error).message}`);
+        throw error; // Relança o erro para ser tratado pelo chamador
     }
 }
+
+
 
 
