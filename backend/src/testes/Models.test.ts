@@ -4,7 +4,7 @@ import { Review } from '../models/Review';
 import { dataSource } from '../services/DataSource';
 import { DriverServices } from '../services/DriverService';
 import { ReviewService } from '../services/ReviewService';
-import { ArrayDriversTest } from './testeDriverModels';
+import { ArrayDriversTest } from '../database/ScriptDriver';
 
 describe('testeDriver e testeReview', () => {
     beforeAll(async () => {

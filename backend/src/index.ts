@@ -1,17 +1,18 @@
 import { Request, Response } from 'express';
-
-
-import { CustomerService } from './services/CustomerService';
+import { isStringObject } from 'util/types';
 import { RidersController } from './controllers/RiderController';
 import { Customer } from './models/Customer';
 import { Driver } from './models/Driver';
+import { Review } from './models/Review';
 import { Riders } from './models/Riders';
-import { startServer } from './services/DataSource';
+import { CustomerService } from './services/CustomerService';
+import { dataSource, startServer } from './services/DataSource';
 import { DriverServices } from './services/DriverService';
 import { DistanceInvalid, DriverNotFound, InvalidDriver } from './services/exceptionHandler/exceptionDriver';
 import { ErrorInter, ErrorInvalidRequest, SuccessResponse } from './services/exceptionHandler/exceptionRequest';
+import { ReviewService } from './services/ReviewService';
 import { RidersService } from './services/RidersService';
-import { isStringObject } from 'util/types';
+
 const express = require('express')
 const app = express()// Multiplica a taxa pelo km e armazena em uma nova propriedade
 const port = 8080;
@@ -23,6 +24,12 @@ interface DriverRequest {
     car: string;
     tax: number;
     km_lowest: number;
+}
+
+interface ReviewRequest {
+    rating: number;
+    comment: string;
+    driverId: number;
 }
 
 interface RequestRideForCustomer {
@@ -55,6 +62,10 @@ interface CustomerRides {
     rides: Ride[];
 }
 
+
+app.post('/initial', async (req: Response, res: Request) => {
+
+})
 
 app.post('/ride/estimate', async (
     req: Request<{}, {}, { customerId: string, origin: string, destination: string }>,
@@ -176,13 +187,23 @@ app.get('/drivers/:id', async (req: Request, res: Response): Promise<Response> =
 }),
 
     // Rota para listar todos os motoristas
-    app.get('/drivers', async (req: Request, res: Response): Promise<Response> => {
-        const drivers = await DriverServices.getAll(); // Usando o método 'getAll'
-        return res.json(drivers);
-    }),
 
-    // Inicializando o servidor
-    app.listen(port, () => {
-        console.log(`Server is running at http://localhost:${port}`);
-    }),
-    startServer()
+    // Endpoint para adicionar motoristas
+    app.post('/review', async (req: Request<{}, {}, ReviewRequest>, res: Response) => {
+        try {
+            if (!req.body === null || undefined || []) {
+
+                const { comment, rating, driverId } = req.body
+                const driverFind = await DriverServices.findById(driverId)
+                const newReview = new Review(0, rating, comment, driverFind)
+                const reviewsAdd = await ReviewService.createReview(newReview)
+                throw res.status(200).json(new SuccessResponse);
+            }
+            throw res.status(400).json(new ErrorInvalidRequest)
+        } catch (error) {
+            console.log(error)
+            new ErrorInter
+        }
+    });
+
+startServer();  

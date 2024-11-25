@@ -26,6 +26,16 @@ export class ReviewService {
         }
     };
 
+    static async createReviewScript(review: Review[]): Promise<Review[]> {
+        try {
+            // Usando save para salvar múltiplos registros
+            return await this.reviewRepository.save(review);
+        } catch (error) {
+            console.log(error)
+            throw new ErrorInvalidRequest;
+        }
+    }
+
     static async getAllReview(driver: Driver): Promise<Review[]> {
         try {
             const reviewWithTargetIfDriver = await this.reviewRepository.findBy({ driver: { id: driver.id } });

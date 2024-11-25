@@ -25,6 +25,18 @@ export class DriverServices {
         }
     }
 
+    static async createDriverScript(drivers: Driver[]): Promise<Driver[]> {
+        try {
+            // Usando save para salvar múltiplos registros
+            const savedDrivers = await this.driverRepository.save(drivers);
+            return savedDrivers;
+        } catch (error) {
+            console.error('Erro ao salvar motoristas:', error);
+            throw error;
+        }
+    }
+
+
 
     static async createDriver(driver: Driver): Promise<Driver> {
         try {

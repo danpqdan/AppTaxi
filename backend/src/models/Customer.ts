@@ -1,10 +1,12 @@
-import { Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Riders } from "./Riders";
 
 @Entity('Customer')
 export class Customer {
     @PrimaryGeneratedColumn()
-    customer_id!: string;
+    id!: string;
+    @Column()
+    customer_id: string
     @OneToMany(() => Riders, (ride) => ride.costumerId, { cascade: true })
     rides?: Riders[] | Riders;
 

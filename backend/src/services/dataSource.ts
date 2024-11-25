@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { DataSource } from 'typeorm'; // Certifique-se de importar DataSource corretamente
+import { DataSource } from 'typeorm';
 import { Customer } from '../models/Customer';
 import { Driver } from '../models/Driver';
 import { Review } from '../models/Review';
@@ -15,21 +15,58 @@ export const dataSource = new DataSource({
   username: isTestEnv ? process.env.TEST_DB_USERNAME : process.env.DB_USERNAME,
   password: isTestEnv ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD,
   database: isTestEnv ? process.env.TEST_DB_NAME : process.env.DB_NAME,
-  charset: process.env.DB_CHARSET || 'uwwwtf8mb4_unicode_ci',
-  synchronize: true,
-  logging: !!isTestEnv,
-  entities: [Driver, Review, Riders, Customer],
-  // Usar dropSchema apenas para o ambiente de testes
+  charset: process.env.DB_CHARSET || 'utf8mb4_unicode_ci', // Corrigido o charset
+  synchronize: true,  // Desativa a criação automática de tabelas
+  logging: true,
   dropSchema: !!isTestEnv,
+
+  entities: [Driver, Review, Riders, Customer],
 });
 
 export const startServer = async () => {
+  let queryRunner;
   try {
     await dataSource.initialize();
-    console.log('Conectado ao banco de dados');
-    console.log('Entidades carregadas:', dataSource.options.entities);
-  }
-  catch (err) {
-    console.error('Erro ao conectar ao banco de dados:', err);
+    console.log('Conectado ao banco de dados.');
+
+    queryRunner = dataSource.createQueryRunner();
+
+    // Inserir dados na tabela "drivers"
+    await queryRunner.query(`
+      INSERT INTO drivers (id, name, description, car, tax, km_lowest) VALUES
+      (1, 'Homer Simpson', 'Olá! Sou o Homer, seu motorista camarada! Relaxe e aproveite o passeio, com direito a rosquinhas e boas risadas (e talvez alguns desvios).', 'Plymouth Valiant 1973 rosa e enferrujado', 2.5, 1),
+      (2, 'Dominic Toretto', 'Ei, aqui é o Dom. Pode entrar, vou te levar com segurança e rapidez ao seu destino. Só não mexa no rádio, a playlist é sagrada.', 'Dodge Charger R/T 1970 modificado', 5.0, 5),
+      (3, 'James Bond', 'Boa noite, sou James Bond. À seu dispor para um passeio suave e discreto. Aperte o cinto e aproveite a viagem.', 'Aston Martin DB5 clássico', 10.0, 10)
+      ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), car = VALUES(car), tax = VALUES(tax), km_lowest = VALUES(km_lowest);
+    `).then(() => console.log('Drivers query executed successfully.'))
+      .catch(error => console.error('Error executing drivers query:', error));
+
+
+    // Inserir dados na tabela "reviews"
+    await queryRunner.query(`
+      INSERT INTO reviews (id, rating, comment, driver_id) VALUES
+      (1, 2, 'Motorista simpático, mas errou o caminho 3 vezes. O carro cheira a donuts.', 1),
+      (2, 4, 'Que viagem incrível! O carro é um show à parte e o motorista, apesar de ter uma cara de poucos amigos, foi super gente boa. Recomendo!', 2),
+      (3, 5, 'Serviço impecável! O motorista é a própria definição de classe e o carro é simplesmente magnífico. Uma experiência digna de um agente secreto.', 3)
+      ON DUPLICATE KEY UPDATE rating = VALUES(rating), comment = VALUES(comment), driver_id = VALUES(driver_id);
+    `);
+
+    await queryRunner.query(`
+      INSERT INTO Customer (customer_id) VALUES
+      ('daniel'),
+      ('João'),
+      ('Patricia')
+      ON DUPLICATE KEY UPDATE customer_id = VALUES(customer_id);
+    `);
+    console.log('Customers query executed successfully.');
+
+    // Commit para garantir que as alterações sejam aplicadas
+    await queryRunner.commitTransaction();
+
+    console.log('Dados inseridos na tabela "reviews".');
+  } catch (error) {
+    console.error('Erro ao inicializar o banco de dados:', error);
+  } finally {
+    if (queryRunner) await queryRunner.release();
   }
 };
