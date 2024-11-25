@@ -3,6 +3,8 @@ import { Driver } from "../models/Driver";
 import { dataSource } from "./DataSource";
 import { DistanceInvalid, DriverNotFound } from "./exceptionHandler/exceptionDriver";
 import { ErrorInvalidRequest, SuccessResponse } from "./exceptionHandler/exceptionRequest";
+import { Costumer } from "models/Costumer";
+import { CostumerService } from "./CostumerService";
 
 
 export class RidersService {
@@ -20,19 +22,20 @@ export class RidersService {
         }
     };
 
-    static async initRideAccept(rider: Riders, driver: Driver): Promise<SuccessResponse> {
+    static async initRideAccept(rider: Riders, driver: Driver, costumerId: string): Promise<SuccessResponse> {
         try {
-
             if (rider.distance == 0) { throw new DistanceInvalid }
             if (driver.id == null) { throw new DriverNotFound("Invalid: ") }
             rider.value = rider.distance * driver.tax;
-            const riderInit = await this.riderRepository.save(rider);
-            console.log(riderInit)
+            const costumerPatch = await CostumerService.patchRiderForCostumer(rider, costumerId)
+            rider.costumerId = costumerPatch;
+            const riderFinish = await this.riderRepository.save(rider);
+            console.log(riderFinish, costumerPatch)
             return new SuccessResponse
         } catch (error) {
             console.log(error)
             throw new ErrorInvalidRequest
         }
-    };
 
+    };
 }

@@ -3,17 +3,18 @@ import { Request, Response } from 'express';
 
 import { Driver } from './models/Driver';
 import { RidersController } from './controllers/RiderController';
-import { Client } from './models/Client';
+import { Costumer } from './models/Costumer';
 import { startServer } from './services/DataSource';
 import { DriverServices } from './services/DriverService';
 import { ErrorInter, ErrorInvalidRequest, SuccessResponse } from './services/exceptionHandler/exceptionRequest';
+import { DistanceInvalid, DriverNotFound } from './services/exceptionHandler/exceptionDriver';
+import { Riders } from './models/Riders';
+import { RidersService } from './services/RidersService';
 import { isStringObject } from 'util/types';
 const express = require('express')
-const app = express()
+const app = express()// Multiplica a taxa pelo km e armazena em uma nova propriedade
 const port = 8080;
 app.use(express.json())
-
-
 
 interface DriverRequest {
     name: string;
@@ -23,14 +24,25 @@ interface DriverRequest {
     km_lowest: number;
 }
 
+interface RequestRideForCostumer {
+    costumer_id: string;
+    origin: string;
+    destination: string;
+    distance: number;
+    duration: string;
+    driver: { id: number, name: string };
+    value: number
+
+}
+
 app.post('/ride/estimate', async (
-    req: Request<{}, {}, { costumerId: number, origin: string, destination: string }>,
+    req: Request<{}, {}, { costumerId: string, origin: string, destination: string }>,
     res: Response) => {
     try {
         const { costumerId, origin, destination } = req.body;
         const returnedAllCoordenates = await RidersController.returnGetDirections(req.body.origin, req.body.destination);
-        const clientRequest = await new Client(costumerId, [])
-        const returnedRouteForCostumer = await RidersController.returnRouteRequest(returnedAllCoordenates, clientRequest, origin, destination);
+        const CostumerRequest = await new Costumer(costumerId, [])
+        const returnedRouteForCostumer = await RidersController.returnRouteRequest(returnedAllCoordenates, CostumerRequest, origin, destination);
         res.json(returnedRouteForCostumer)
         if (!returnedAllCoordenates || !returnedAllCoordenates) {
             return new ErrorInvalidRequest;
@@ -39,6 +51,30 @@ app.post('/ride/estimate', async (
         console.log(error)
         res.status(500).json(ErrorInter)
     }
+});
+
+app.patch('/ride/confirme', async (req: Request<{}, {}, { initRide: RequestRideForCostumer }>, res: Response) => {
+    try {
+        const { initRide } = req.body;
+        initRide.destination.toLowerCase, initRide.origin.toLowerCase
+        const driver = await DriverServices.findById(initRide.driver.id)
+        if (initRide.origin && initRide.destination && initRide.costumer_id === '' || null, initRide.origin === initRide.destination) {
+            throw res.status(400).json(ErrorInvalidRequest)
+        }
+        if (!driver) {
+            throw res.status(404).json(DriverNotFound)
+        }
+        if (initRide.distance < driver.km_lowest) {
+            throw res.status(406).json(DistanceInvalid)
+        }
+        const rider = new Riders(initRide.origin, initRide.destination, initRide.distance, initRide.duration)
+        const costumerFinish = RidersService.initRideAccept(rider, driver, initRide.costumer_id)
+        console.log(costumerFinish)
+        throw res.status(200).json(SuccessResponse)
+    } catch {
+        throw res.status(500).json(ErrorInter)
+    }
+
 });
 
 app.post('/driver', async (req: Request<{}, {}, DriverRequest>, res: Response) => {
@@ -61,7 +97,7 @@ app.post('/driver', async (req: Request<{}, {}, DriverRequest>, res: Response) =
 });
 
 app.get('./review', async (req: Request, res: Response) => {
-    
+
 }),
 
 

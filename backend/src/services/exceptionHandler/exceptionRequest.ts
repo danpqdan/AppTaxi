@@ -11,11 +11,9 @@ export class ErrorInvalidRequest extends ExceptionConfigHandler {
 }
 
 export class SuccessResponse {
-    message: string;
-    statusCode: number;
-    constructor(message = "SUCESS_REQUEST", statusCode = 200) {
-        this.message = message;
-        this.statusCode = statusCode
+    sucess_request: boolean;
+    constructor(sucess_request = true) {
+        this.sucess_request = sucess_request;
     }
 }
 

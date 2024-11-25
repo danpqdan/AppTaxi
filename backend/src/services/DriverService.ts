@@ -113,6 +113,7 @@ export class DriverServices {
             if (drivers.length == 0) {
                 throw new DriverNotFound("KM_Low in moment")
             }
+            drivers.sort((a, b) => a.km_lowest - b.km_lowest);
             return drivers
         } catch (error) {
             console.log(error)

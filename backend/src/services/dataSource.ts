@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm'; // Certifique-se de importar DataSource co
 import { Driver } from '../models/Driver';
 import { Review } from '../models/Review';
 import { Riders } from '../models/Riders';
-import { Client } from '../models/Client';
+import { Client } from '../models/Costumer';
 
 dotenv.config();
 const isTestEnv = process.env.NODE_ENV === 'test';
