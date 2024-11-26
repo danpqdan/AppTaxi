@@ -1,8 +1,9 @@
 import { Coordinates } from '../controllers/RiderController'
+import { ErrorInvalidRequest } from './exceptionHandler/exceptionRequest';
+import path from 'path';
 
 import * as dotenv from 'dotenv';
-import { ErrorInvalidRequest } from './exceptionHandler/exceptionRequest';
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 export const keyApi = process.env.GOOGLE_API_KEY;
 
@@ -108,14 +109,8 @@ export async function setParametersForSearch(coordinates: Coordinates): Promise<
         }
 
         const data = await response.json();
-
-        const routes = data.routes;
-        if (!routes || routes.length === 0) {
-            throw new ErrorInvalidRequest;
-        }
-        console.log(routes)
         console.log(data)
-        return routes && data;
+        return data;
 
 
     } catch (error) {

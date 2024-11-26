@@ -16,10 +16,6 @@ export class RidersController {
             const destinationCoords = await getCoordinates(addressDestination);
 
             if (originCoords && destinationCoords) {
-                console.log(`Origem: Lat ${originCoords.lat}, Lng ${originCoords.lng}`);
-                console.log(`Destino: Lat ${destinationCoords.lat}, Lng ${destinationCoords.lng}`);
-
-                // Retorna o objeto com as coordenadas no formato esperado
                 return {
                     origin: { lat: originCoords.lat, lng: originCoords.lng },
                     destination: { lat: destinationCoords.lat, lng: destinationCoords.lng },
@@ -41,8 +37,8 @@ export class RidersController {
     static async returnRouteRequest(coordinates: Coordinates, origin: string, destination: string): Promise<any> {
         const dataReturnGoogle = await setParametersForSearch(coordinates);
         const route = dataReturnGoogle.routes[0];
-        const distance = route.legs[0].distanceMeters;
-        const duration = route.legs[0].duration;
+        const distance = route.distanceMeters;
+        const duration = route.duration;
 
         const newTrip = new Riders(
             origin,
@@ -50,8 +46,10 @@ export class RidersController {
             distance,
             duration,
         )
-        const rider = await RidersService.createRider(newTrip);
-        const driversFind = await DriverServices.findForKmLowest(rider);
+
+        console.log(newTrip)
+        //const rider = await RidersService.createRider(newTrip);
+        const driversFind = await DriverServices.findForKmLowest(newTrip);
         driversFind.forEach(driver => { driver.tax *= newTrip.distance });
 
         return {

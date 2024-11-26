@@ -1,25 +1,42 @@
 services:
   frontend:
+    volumes:
+      - .env:/app/.env
     build:
       context: ./frontend
     ports:
       - "80:80"
+    env_file:
+      - ./.env
     depends_on:
       - backend
     environment:
-      - REACT_APP_API_URL=http://backend:8080
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     command: ["npm", "run", "dev"]
-
 
   backend:
     build:
       context: ./backend
     ports:
       - "8080:8080"
+
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV} # Passando o ambiente de desenvolvimento ou teste
+      - DB_HOST=${DB_HOST} # Usando a variável DB_HOST do .env
+      - DB_PORT=${DB_PORT} # Usando a variável DB_PORT do .env
+      - DB_USERNAME=${DB_USERNAME} # Usando a variável DB_USERNAME do .env
+      - DB_PASSWORD=${DB_PASSWORD} # Usando a variável DB_PASSWORD do .env
+      - DB_NAME=${DB_NAME} # Usando a variável DB_NAME do .env
+      - DB_CHARSET=${DB_CHARSET} # Usando a variável DB_CHARSET do .env
+      - TEST_DB_HOST=${TEST_DB_HOST} # Usando a variável TEST_DB_HOST do .env
+      - TEST_DB_PORT=${TEST_DB_PORT} # Usando a variável TEST_DB_PORT do .env
+      - TEST_DB_USERNAME=${TEST_DB_USERNAME} # Usando a variável TEST_DB_USERNAME do .env
+      - TEST_DB_PASSWORD=${TEST_DB_PASSWORD} # Usando a variável TEST_DB_PASSWORD do .env
+      - TEST_DB_NAME=${TEST_DB_NAME} # Usando a variável TEST_DB_NAME do .env
     volumes:
       - ./backend:/app
+    env_file:
+      - ./.env
     depends_on:
       - db
     networks:
@@ -28,13 +45,15 @@ services:
   db:
     image: mysql:8.0
     container_name: mysql-db
+
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: App_Taxi
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: ${DB_NAME} # Usando a variável DB_NAME do .env
+      MYSQL_USER: ${DB_USERNAME} # Usando a variável DB_USERNAME do .env
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+
     ports:
-      - "3307:3306"  #Porta padrão 3307
+      - "3307:3306" #Porta padrão 3307
     volumes:
       - mysql-data:/var/lib/mysql
     networks:

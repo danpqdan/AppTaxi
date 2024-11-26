@@ -1,3 +1,4 @@
+import mysql from 'mysql2'
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { Customer } from '../models/Customer';
@@ -5,28 +6,68 @@ import { Driver } from '../models/Driver';
 import { Review } from '../models/Review';
 import { Riders } from '../models/Riders';
 
-dotenv.config();
+// Carregar o .env do backend
+dotenv.config({ path: './app/.env' }); // Caminho para o .env docker
+console.log(process.env.DB_HOST); // Deve imprimir "db"
+console.log(process.env.DB_USERNAME); // Deve imprimir "admin"
+
 const isTestEnv = process.env.NODE_ENV === 'test';
 
-export const dataSource = new DataSource({
-  type: 'mysql',
-  host: isTestEnv ? process.env.TEST_DB_HOST : process.env.DB_HOST,
-  port: parseInt(isTestEnv ? process.env.TEST_DB_PORT ?? '3306' : process.env.DB_PORT ?? '3306', 10),
-  username: isTestEnv ? process.env.TEST_DB_USERNAME : process.env.DB_USERNAME,
-  password: isTestEnv ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD,
-  database: isTestEnv ? process.env.TEST_DB_NAME : process.env.DB_NAME,
-  charset: process.env.DB_CHARSET || 'utf8mb4_unicode_ci', // Corrigido o charset
-  synchronize: true,  // Desativa a criação automática de tabelas
-  logging: true,
-  dropSchema: !!isTestEnv,
+// const createDatabaseIfNotExists = async () => {
+//   const isTestEnv = process.env.NODE_ENV === 'test';
+//   const host = isTestEnv ? process.env.TEST_DB_HOST : process.env.DB_HOST;
+//   const port = isTestEnv ? process.env.TEST_DB_PORT ?? '3306' : process.env.DB_PORT ?? '3306';
+//   const username = isTestEnv ? process.env.TEST_DB_USERNAME : process.env.DB_USERNAME;
+//   const password = isTestEnv ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD;
+//   const database = isTestEnv ? process.env.TEST_DB_NAME : process.env.DB_NAME;
 
-  entities: [Driver, Review, Riders, Customer],
-});
+//   try {
+//     const connection = await mysql.createConnection({
+//       host,
+//       port: parseInt(port, 10),
+//       user: username,
+//       password,
+//     });
+
+//     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+//     console.log(`Banco de dados '${database}' criado/verificado com sucesso.`);
+//     await connection.end();
+//   } catch (error) {
+//     console.error('Erro ao criar/verificar o banco de dados:', error);
+//     throw error;
+//   }
+// };
+
+// Antes de inicializar o DataSource, garanta que o banco exista
+
+export const dataSource = new DataSource(
+  {
+    type: 'mysql',
+    host: isTestEnv ? process.env.TEST_DB_HOST : process.env.DB_HOST,
+    port: parseInt(isTestEnv ? process.env.TEST_DB_PORT ?? '3306' : process.env.DB_PORT ?? '3306', 10),
+    username: isTestEnv ? process.env.TEST_DB_USERNAME : process.env.DB_USERNAME,
+    password: isTestEnv ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD,
+    database: isTestEnv ? process.env.TEST_DB_NAME : process.env.DB_NAME,
+    charset: process.env.DB_CHARSET || 'utf8mb4_unicode_ci', // Corrigido o charset
+    synchronize: true,  // Desativa a criação automática de tabelas
+    logging: true,
+    dropSchema: !!isTestEnv,
+
+    entities: [Driver, Review, Riders, Customer],
+  });
+
+
+
 
 export const startServer = async () => {
   let queryRunner;
   try {
+    console.log(process.env.DB_HOST); // Deve imprimir "db"
+    console.log(process.env.DB_USERNAME); // Deve imprimir "admin"
+
+    //await createDatabaseIfNotExists();
     await dataSource.initialize();
+
     console.log('Conectado ao banco de dados.');
 
     queryRunner = dataSource.createQueryRunner();
@@ -34,9 +75,9 @@ export const startServer = async () => {
     // Inserir dados na tabela "drivers"
     await queryRunner.query(`
       INSERT INTO drivers (id, name, description, car, tax, km_lowest) VALUES
-      (1, 'Homer Simpson', 'Olá! Sou o Homer, seu motorista camarada! Relaxe e aproveite o passeio, com direito a rosquinhas e boas risadas (e talvez alguns desvios).', 'Plymouth Valiant 1973 rosa e enferrujado', 2.5, 1),
-      (2, 'Dominic Toretto', 'Ei, aqui é o Dom. Pode entrar, vou te levar com segurança e rapidez ao seu destino. Só não mexa no rádio, a playlist é sagrada.', 'Dodge Charger R/T 1970 modificado', 5.0, 5),
-      (3, 'James Bond', 'Boa noite, sou James Bond. À seu dispor para um passeio suave e discreto. Aperte o cinto e aproveite a viagem.', 'Aston Martin DB5 clássico', 10.0, 10)
+      (1, 'Homer Simpson', 'Olá! Sou o Homer, seu motorista camarada! Relaxe e aproveite o passeio, com direito a rosquinhas e boas risadas (e talvez alguns desvios).', 'Plymouth Valiant 1973 rosa e enferrujado', 2.50, 1),
+      (2, 'Dominic Toretto', 'Ei, aqui é o Dom. Pode entrar, vou te levar com segurança e rapidez ao seu destino. Só não mexa no rádio, a playlist é sagrada.', 'Dodge Charger R/T 1970 modificado', 5.00, 5),
+      (3, 'James Bond', 'Boa noite, sou James Bond. À seu dispor para um passeio suave e discreto. Aperte o cinto e aproveite a viagem.', 'Aston Martin DB5 clássico', 10.00, 10)
       ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), car = VALUES(car), tax = VALUES(tax), km_lowest = VALUES(km_lowest);
     `).then(() => console.log('Drivers query executed successfully.'))
       .catch(error => console.error('Error executing drivers query:', error));

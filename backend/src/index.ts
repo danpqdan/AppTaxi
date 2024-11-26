@@ -6,17 +6,26 @@ import { Driver } from './models/Driver';
 import { Review } from './models/Review';
 import { Riders } from './models/Riders';
 import { CustomerService } from './services/CustomerService';
-import { dataSource, startServer } from './services/DataSource';
+import { startServer } from './services/DataSource';
 import { DriverServices } from './services/DriverService';
 import { DistanceInvalid, DriverNotFound, InvalidDriver } from './services/exceptionHandler/exceptionDriver';
 import { ErrorInter, ErrorInvalidRequest, SuccessResponse } from './services/exceptionHandler/exceptionRequest';
 import { ReviewService } from './services/ReviewService';
 import { RidersService } from './services/RidersService';
 
+
 const express = require('express')
-const app = express()// Multiplica a taxa pelo km e armazena em uma nova propriedade
+const cors = require('cors');
+const app = express()
+app.use(cors());
 const port = 8080;
 app.use(express.json())
+
+app.use(cors({
+    origin: 'http://localhost',
+    methods: ['GET', 'POST', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 interface DriverRequest {
     name: string;
@@ -62,11 +71,6 @@ interface CustomerRides {
     rides: Ride[];
 }
 
-
-app.post('/initial', async (req: Response, res: Request) => {
-
-})
-
 app.post('/ride/estimate', async (
     req: Request<{}, {}, { customerId: string, origin: string, destination: string }>,
     res: Response) => {
@@ -78,10 +82,12 @@ app.post('/ride/estimate', async (
         if (!returnedAllCoordenates || !returnedAllCoordenates) {
             return new ErrorInvalidRequest;
         }
-        res.json(returnedRouteForCostumer)
+
+        console.log(returnedRouteForCostumer);
+        res.status(200).json(returnedRouteForCostumer)
     } catch (error) {
         console.log(error)
-        res.status(500).json(ErrorInter)
+        res.status(500).json(new ErrorInter)
     }
 });
 
@@ -91,20 +97,20 @@ app.patch('/ride/confirme', async (req: Request<{}, {}, { initRide: RequestRideF
         initRide.destination.toLowerCase, initRide.origin.toLowerCase
         const driver = await DriverServices.findById(initRide.driver.id)
         if (initRide.origin && initRide.destination && initRide.customer_id === '' || null, initRide.origin === initRide.destination) {
-            throw res.status(400).json(ErrorInvalidRequest)
+            throw res.status(400).json(new ErrorInvalidRequest)
         }
         if (!driver) {
-            throw res.status(404).json(DriverNotFound)
+            throw res.status(404).json(new DriverNotFound(initRide.driver.name))
         }
         if (initRide.distance < driver.km_lowest) {
-            throw res.status(406).json(DistanceInvalid)
+            throw res.status(406).json(new DistanceInvalid)
         }
         const rider = new Riders(initRide.origin, initRide.destination, initRide.distance, initRide.duration)
         const customerFinish = RidersService.initRideAccept(rider, driver, initRide.customer_id)
         console.log(customerFinish)
-        throw res.status(200).json(SuccessResponse)
+        throw res.status(200).json(new SuccessResponse)
     } catch {
-        throw res.status(500).json(ErrorInter)
+        throw res.status(500).json(new ErrorInter)
     }
 
 });
@@ -129,13 +135,15 @@ app.post('/driver', async (req: Request<{}, {}, DriverRequest>, res: Response) =
 });
 
 
-app.get('/ride/:customer_id', async (req: Request, res: Response): Promise<CustomerRides | Customer> => {
+app.get('/ride/:customer_id', async (req: Request, res: Response): Promise<CustomerRides | Customer | void> => {
     const customerId = req.params.customer_id;
-    const driverId = req.query.driver_id ? parseInt(req.query.driver_id as string, 10) : undefined; // Extrai driver_id da query string
+    const driverId = req.query.driver_id ? parseInt(req.query.driver_id as string, 10) : undefined;
+
     try {
         const customer = await CustomerService.getRideForcustomer(customerId);
-        if (driverId != undefined) {
-            const ride = await RidersService.returnRiderForDriver(driverId)
+
+        if (driverId !== undefined) {
+            const ride = await RidersService.returnRiderForDriver(driverId);
             const customerRides: CustomerRides = {
                 customer_id: customerId,
                 rides: [
@@ -148,21 +156,29 @@ app.get('/ride/:customer_id', async (req: Request, res: Response): Promise<Custo
                         duration: ride.duration,
                         driver: {
                             id: ride.driver?.id!,
-                            name: ride.driver?.name!
+                            name: ride.driver?.name!,
                         },
-                        value: ride.value!
-                    }
-                ]
+                        value: ride.value!,
+                    },
+                ],
             };
-            throw res.status(200).json(customerRides)
+            res.status(200).json(customerRides);
+            return customerRides; // Retorno explícito
         }
+
         if (!customer || (Array.isArray(customer) && customer.length === 0)) {
-            throw res.status(400).json(InvalidDriver);
+            const error = new InvalidDriver();
+            res.status(400).json(error);
+            return; // Não há valor para retornar
         }
-        throw res.status(200).json(customer);
+
+        res.status(200).json(customer);
+        return customer; // Retorno explícito
     } catch (error) {
         console.error(error);
-        throw new ErrorInter
+        const internalError = new ErrorInter();
+        res.status(500).json(internalError);
+        return; // Não há valor para retornar em caso de erro
     }
 });
 
@@ -188,6 +204,16 @@ app.get('/drivers/:id', async (req: Request, res: Response): Promise<Response> =
 
     // Rota para listar todos os motoristas
 
+    app.get('/drivers', async (req: Request, res: Response) => {
+        try {
+            const listDrive = await DriverServices.getAll()
+            res.status(200).json(listDrive)
+        } catch (error) {
+            console.log(error)
+            res.status(500).json(new ErrorInter)
+        }
+    }),
+
     // Endpoint para adicionar motoristas
     app.post('/review', async (req: Request<{}, {}, ReviewRequest>, res: Response) => {
         try {
@@ -206,4 +232,7 @@ app.get('/drivers/:id', async (req: Request, res: Response): Promise<Response> =
         }
     });
 
-startServer();  
+startServer();
+app.listen(8080, () => {
+    console.log('Servidor rodando na porta 8080');
+});
