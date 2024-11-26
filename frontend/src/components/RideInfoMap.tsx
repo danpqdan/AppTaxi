@@ -5,10 +5,9 @@ const mapContainerStyle = { width: '100%', height: '500px' };
 const defaultCenter = { lat: -23.5349029, lng: -46.4381596 }; // Ajuste conforme necessário
 
 
-export const RideInfoMap = ({ polyline, origin, destination, estimatedTime, apiKey }: { polyline: string, origin: string, destination: string, estimatedTime: string, apiKey: string }) => {
+export const RideInfoMap = ({ polyline, estimatedTime, apiKey }: { polyline: string, origin: string, destination: string, estimatedTime: string, apiKey: string }) => {
     const [isLoaded, setIsLoaded] = useState(false);
-    const libraries = ['geometry'];
-
+    
     // Função para decodificar a polyline
     const decodePolyline = (encoded: string): { lat: number, lng: number }[] => {
         if (window.google && google.maps.geometry) {
@@ -30,7 +29,7 @@ export const RideInfoMap = ({ polyline, origin, destination, estimatedTime, apiK
     return (
         <LoadScript
             googleMapsApiKey={apiKey}
-
+            libraries={['geometry']}
             onLoad={handleApiLoad}  // Definindo a função de carregamento
         >
             {isLoaded ? (
