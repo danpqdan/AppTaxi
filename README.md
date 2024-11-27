@@ -24,20 +24,20 @@ NODE_ENV=test
 
 DB_HOST=mysql-db
 DB_PORT=3306
-DB_USERNAME=your_name
-DB_PASSWORD=your_password
+DB_USERNAME=<your_name> || Default: root
+DB_PASSWORD=<your_password> || Default: root
 DB_NAME=app_taxi
 DB_CHARSET=utf8mb4_unicode_ci
 
 # Configuração para Ambiente de Testes
 TEST_DB_HOST=mysql-db
 TEST_DB_PORT=3306
-TEST_DB_USERNAME=your_name
-TEST_DB_PASSWORD=your_password
+TEST_DB_USERNAME=<your_name> || Default: root
+TEST_DB_PASSWORD=<your_password> || Default: root
 TEST_DB_NAME=app_taxi_test
 
 GOOGLE_API_KEY=<sua_google_api_key>
-VITE_GOOGLE_API_KEY=<sua_vite_google_api_key>
+VITE_GOOGLE_API_KEY=<sua_vite_google_api_key> ! ##Need for using JS.google with VITE
 ```
 
 ## Executando o Projeto
@@ -82,15 +82,19 @@ O back-end está disponível no endereço http://localhost:8080. Ele utiliza o N
 
 Gerenciamento do Ambiente
 Parar os Containers
+
 ```bash
 Copiar código
 docker-compose down
 ```
+
 Recriar os Containers
+
 ```bash
 Copiar código
 docker-compose up --force-recreate
 ```
+
 Remover Volumes Persistentes
 Este comando apaga os dados do banco de dados e outros volumes persistentes:
 
@@ -105,4 +109,8 @@ Para acessar o terminal de um container em execução, utilize o comando:
 Copiar código
 docker exec -it <NOME_DO_CONTAINER> bash
 Substitua <NOME_DO_CONTAINER> pelo nome do container que você deseja acessar. Exemplos: backend, frontend, ou mysql-db.
+```
+
+```bash
+Font: GoogleMapsPlataform --- YTube
 ```
