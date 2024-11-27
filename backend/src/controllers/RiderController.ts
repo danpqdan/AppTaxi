@@ -50,13 +50,13 @@ export class RidersController {
         console.log(newTrip)
         //const rider = await RidersService.createRider(newTrip);
         const driversFind = await DriverServices.findForKmLowest(newTrip);
-        driversFind.forEach(driver => { driver.tax *= newTrip.distance });
+
 
         return {
             coordinates,
             distance,
             duration,
-            options: [driversFind],
+            options: driversFind,
             routeResponse: route
         }
     };

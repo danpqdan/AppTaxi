@@ -6,32 +6,12 @@
     align-items: center;
     justify-content: center;
     background-clip: padding-box;
-    color: aliceblue;
+    color: rgb(224, 216, 216);
 }
 
-.background p,
-h1,
-form {
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 100%;
-    justify-content: center;
-}
-
-button {
-    color: aliceblue;
-}
-
-.itensForm label,
-input {
-    margin: 5px;
-    border: 1px solid whi;
-}
 
 .directions {
-    color: rgb(255, 255, 255);
+    color: rgb(224, 216, 216);
     font-size: x-large;
     font-weight: 100;
     position: absolute;

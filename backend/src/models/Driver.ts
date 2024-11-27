@@ -21,6 +21,9 @@ export class Driver {
     @Column('int')
     km_lowest: number;
 
+    @Column("decimal", { precision: 10, scale: 2, nullable: true })
+    value?: number;
+
     @OneToMany(() => Review, (review) => review.driver, { cascade: true })
     reviews?: Review[];
 
@@ -32,6 +35,13 @@ export class Driver {
         this.tax = tax;
         this.km_lowest = km_lowest;
     }
+
+    setValue(distance: number, tax: number) {
+        if (!distance) return 0;
+        this.value = distance * tax;
+        return this.value;
+    }
+
 
 
 }

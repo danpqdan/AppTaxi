@@ -124,8 +124,17 @@ export class DriverServices {
             if (drivers.length == 0) {
                 throw new DriverNotFound("KM_Low in moment")
             }
-            drivers.sort((a, b) => a.km_lowest - b.km_lowest);
-            return drivers
+            const result = drivers
+                .sort((a, b) => a.km_lowest - b.km_lowest)
+                .map((driver) => {
+                    const driverInstance = new Driver(driver.name, driver.description || '', driver.car, driver.tax, driver.km_lowest);
+                    driverInstance.setValue(rider.distance, driver.tax); // Configura `value`
+                    return driverInstance; // Retorna a instância diretamente
+                });
+
+            return result;
+
+
         } catch (error) {
             console.log(error)
             throw new ErrorInter

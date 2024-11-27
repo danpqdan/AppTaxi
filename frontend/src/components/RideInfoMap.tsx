@@ -2,10 +2,9 @@ import '../App.css';
 
 import { APIProvider, Map, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export default function RideInfoMap() {
-
-    const position = { lat: 34.0522, lng: -118.2437 }; // Coordenadas de Los Angeles
     const api = import.meta.env.VITE_GOOGLE_API_KEY
 
     return (
@@ -31,13 +30,26 @@ export default function RideInfoMap() {
 
 function Diretions() {
     const map = useMap()
+    const location = useLocation();
+    const { origin, destination, polyline } = location.state || {};
     const routeLibrary = useMapsLibrary("routes");
     const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService>();
     const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer>();
     const [routes, setRoutes] = useState<google.maps.DirectionsRoute[]>([])
     const [routeIndex, setRouteIndex] = useState(0);
-    const selected = routes[routeIndex];
+    const selected = routes[polyline];
     const leg = selected?.legs[0];
+
+    // if (options && Array.isArray(options)) {
+    //     options.forEach((group) => {
+    //         group.forEach(({ name, id }) => {
+    //             console.log(`Driver Name: ${name}, ID: ${id}`);
+    //         });
+    //     });
+    // }
+
+
+
 
     useEffect(() => {
         if (!routeLibrary || !map) return;
@@ -48,8 +60,8 @@ function Diretions() {
     useEffect(() => {
         if (!directionsService || !directionsRenderer) return;
         directionsService.route({
-            origin: "rua fontoura xavier 55 itaquera",
-            destination: "rua dante pazzanese 500 moema",
+            origin: origin,
+            destination: destination,
             travelMode: google.maps.TravelMode.DRIVING,
             provideRouteAlternatives: true
         }).then(response => {
