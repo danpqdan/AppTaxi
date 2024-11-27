@@ -1,10 +1,11 @@
-import { Riders } from "../models/Riders";
-import { LessThanOrEqual } from "typeorm";
+import { In, LessThanOrEqual } from "typeorm";
 import { Driver } from "../models/Driver";
 import { Review } from "../models/Review";
+import { Riders } from "../models/Riders";
 import { dataSource } from "./DataSource";
 import { DriverNotFound, DriverNotFoundWithId } from "./exceptionHandler/exceptionDriver";
 import { ErrorInter, ErrorInvalidRequest } from "./exceptionHandler/exceptionRequest";
+import { ReviewService } from "./ReviewService";
 
 export class DriverServices {
     static driverRepository = dataSource.getRepository(Driver)
@@ -13,17 +14,19 @@ export class DriverServices {
 
     static async getAll(): Promise<Driver[]> {
         try {
-            // Usando o repositório do TypeORM para buscar todos os motoristas
-            const listDrivers = await this.driverRepository.find();
-            if (!listDrivers) {
-                throw new DriverNotFound('Driver')
-            }
+            // Usando o repositório do TypeORM para buscar todos os motoristas e carregar os reviews associados
+            const listDrivers = await this.driverRepository.find({
+                relations: ['reviews'], // Carrega as revisões associadas a cada motorista
+            });
+
+            // Retorne a lista de motoristas com os reviews
             return listDrivers;
-        } catch (err) {
-            console.error(err);
-            throw new ErrorInter;
+        } catch (error) {
+            console.error('Erro ao buscar motoristas com reviews:', error);
+            throw new Error('Erro ao buscar motoristas');
         }
     }
+
 
     static async createDriverScript(drivers: Driver[]): Promise<Driver[]> {
         try {
@@ -92,13 +95,13 @@ export class DriverServices {
     static async patchDriverWithReview(review: Review): Promise<Driver> {
         try {
             const driverTargetForReview = await this.driverRepository.findOne({
-                where: { id: review.driver.id },
+                where: { id: review.driver },
                 relations: ['reviews'],
             });
 
             // Verifica se o Driver foi encontrado
             if (!driverTargetForReview) {
-                throw new DriverNotFoundWithId(review.driver.id);
+                throw new DriverNotFoundWithId(review.driver);
             }
 
             // Adiciona a nova Review ao array de reviews do Driver
@@ -116,29 +119,69 @@ export class DriverServices {
         }
     }
 
-    static async findForKmLowest(rider: Riders): Promise<Driver[]> {
+    static async getDriversWithReviews(drivers: Driver[]) {
         try {
-            const drivers = await this.driverRepository.find({
-                where: { km_lowest: LessThanOrEqual(rider.distance) }
-            })
-            if (drivers.length == 0) {
-                throw new DriverNotFound("KM_Low in moment")
-            }
-            const result = drivers
-                .sort((a, b) => a.km_lowest - b.km_lowest)
-                .map((driver) => {
-                    const driverInstance = new Driver(driver.name, driver.description || '', driver.car, driver.tax, driver.km_lowest);
-                    driverInstance.setValue(rider.distance, driver.tax); // Configura `value`
-                    return driverInstance; // Retorna a instância diretamente
-                });
+            // Busca todos os motoristas com suas respectivas revisões de uma vez
+            const driversWithReviews = await this.driverRepository.find({
+                where: { id: In(drivers.map(driver => driver.id)) },
+                relations: ['reviews'],  // Carrega as revisões junto
+            });
 
-            return result;
-
-
+            return driversWithReviews;  // Retorna a lista de motoristas com suas revisões
         } catch (error) {
-            console.log(error)
-            throw new ErrorInter
+            console.error('Erro ao buscar motoristas com revisões:', error);
+            throw error;
         }
     }
 
+
+
+
+    static async findForKmLowest(rider: Riders): Promise<Driver[]> {
+        const drivers = await this.driverRepository.find({
+            where: { km_lowest: LessThanOrEqual(rider.distance) },
+            relations: ['reviews'], // Carrega as revisões associadas aos motoristas
+        });
+
+        // Verificando se não há motoristas
+        if (drivers.length === 0) {
+            throw new DriverNotFound("Nenhum motorista encontrado para o KM_Low.");
+        }
+        // Processando os motoristas e suas revisões
+        const sortedDrivers = await Promise.all(
+            drivers
+                .sort((a, b) => a.km_lowest - b.km_lowest) // Ordenando os motoristas pelo km_lowest
+                .map(async (driver) => {
+                    // Criando uma instância de Driver com as informações necessárias, incluindo as revisões
+                    const driverInstance = new Driver(
+                        driver.name,
+                        driver.description || '', // Garantindo que 'description' tenha um valor
+                        driver.car,
+                        driver.tax,
+                        driver.km_lowest,
+                    );
+
+                    // Buscando as revisões do motorista de forma assíncrona
+                    const reviews = await ReviewService.getReviewsForDriver(driver.id);
+                    reviews.forEach(review => {
+                        console.log(`Review para o motorista ${driver.name}: ${review.comment}`);
+                    });
+
+                    // Associando as revisões encontradas à instância do motorista
+                    driverInstance.reviews = reviews;
+
+                    // Retornando a instância do motorista
+                    return driverInstance;
+                })
+        );
+
+        return sortedDrivers;
+
+    } catch() {
+        throw new ErrorInter;
+    }
 }
+
+
+
+

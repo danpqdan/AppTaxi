@@ -21,10 +21,10 @@ export class Riders {
     value?: number;
     @ManyToOne(() => Customer, (customer) => customer.customer_id, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'costumer_id' })
-    costumerId?: Customer;
+    costumerId?: string;
     @OneToOne(() => Driver, (driver) => driver.id, { onDelete: 'NO ACTION' })
     @JoinColumn({ name: 'driver_id' })
-    driver?: Driver;
+    driver?: number;
 
     constructor(origin: string, destination: string, distance: number, duration: string) {
         this.date = new Date(format(new Date(), 'dd-MM-yyyy HH:mm:ss'));

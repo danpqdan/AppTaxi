@@ -12,6 +12,6 @@ export class Customer {
 
     constructor(customer_id: string, rides: Riders[] | Riders) {
         this.customer_id = customer_id;
-        this.rides = rides;
+        this.rides = rides; // Garante que `rides` seja um array
     }
 }

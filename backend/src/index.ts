@@ -13,18 +13,16 @@ import { ErrorInter, ErrorInvalidRequest, SuccessResponse } from './services/exc
 import { ReviewService } from './services/ReviewService';
 import { RidersService } from './services/RidersService';
 
-
+const cors = require('cors')
 const express = require('express')
-const cors = require('cors');
 const app = express()
-app.use(cors());
-const port = 8080;
+app.use(cors);
 app.use(express.json())
 
 app.use(cors({
-    origin: 'http://localhost',
-    methods: ['GET', 'POST', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: '*',
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 interface DriverRequest {
@@ -62,7 +60,6 @@ interface Ride {
     value: number;
 }
 interface CustomDriver {
-    id: number,
     name: string
 }
 
@@ -91,29 +88,33 @@ app.post('/ride/estimate', async (
     }
 });
 
-app.patch('/ride/confirme', async (req: Request<{}, {}, { initRide: RequestRideForCustomer }>, res: Response) => {
+app.patch('/ride/confirme', async (req: Request<{}, {}, { ride: RequestRideForCustomer }>, res: Response) => {
     try {
-        const { initRide } = req.body;
-        initRide.destination.toLowerCase, initRide.origin.toLowerCase
-        const driver = await DriverServices.findById(initRide.driver.id)
-        if (initRide.origin && initRide.destination && initRide.customer_id === '' || null, initRide.origin === initRide.destination) {
-            throw res.status(400).json(new ErrorInvalidRequest)
-        }
-        if (!driver) {
-            throw res.status(404).json(new DriverNotFound(initRide.driver.name))
-        }
-        if (initRide.distance < driver.km_lowest) {
-            throw res.status(406).json(new DistanceInvalid)
-        }
-        const rider = new Riders(initRide.origin, initRide.destination, initRide.distance, initRide.duration)
-        const customerFinish = RidersService.initRideAccept(rider, driver, initRide.customer_id)
-        console.log(customerFinish)
-        throw res.status(200).json(new SuccessResponse)
-    } catch {
-        throw res.status(500).json(new ErrorInter)
-    }
+        const { ride } = req.body;
 
+        if (!ride.origin || !ride.destination || !ride.customer_id || ride.origin === ride.destination) {
+            res.status(400).json(new ErrorInvalidRequest());
+        }
+
+        const driver = await DriverServices.findById(ride.driver.id);
+        if (!driver) {
+            res.status(404).json(new DriverNotFound(ride.driver.name));
+        }
+
+        if (ride.distance < driver.km_lowest) {
+            res.status(406).json(new DistanceInvalid());
+        }
+
+        const rider = new Riders(ride.origin, ride.destination, ride.distance, ride.duration);
+        console.log(rider);
+
+        res.status(200).json(new SuccessResponse());
+    } catch (error) {
+        console.error(error);
+        res.status(500).json(new ErrorInter());
+    }
 });
+
 
 app.post('/driver', async (req: Request<{}, {}, DriverRequest>, res: Response) => {
     try {
@@ -155,8 +156,7 @@ app.get('/ride/:customer_id', async (req: Request, res: Response): Promise<Custo
                         distance: ride.distance,
                         duration: ride.duration,
                         driver: {
-                            id: ride.driver?.id!,
-                            name: ride.driver?.name!,
+                            name: customer.customer_id
                         },
                         value: ride.value!,
                     },
@@ -221,7 +221,7 @@ app.get('/drivers/:id', async (req: Request, res: Response): Promise<Response> =
 
                 const { comment, rating, driverId } = req.body
                 const driverFind = await DriverServices.findById(driverId)
-                const newReview = new Review(0, rating, comment, driverFind)
+                const newReview = new Review(0, rating, comment, driverFind.id)
                 const reviewsAdd = await ReviewService.createReview(newReview)
                 throw res.status(200).json(new SuccessResponse);
             }

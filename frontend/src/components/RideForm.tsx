@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import './css/form.css';
 
 export const RideForm = () => {
-    const api = import.meta.env.VITE_GOOGLE_API_KEY
+    const api = import.meta.env.VITE_GOOGLE_API_KEY;
 
     const [origin, setOrigin] = useState('');
     const [destination, setDestination] = useState('');
@@ -35,11 +35,8 @@ export const RideForm = () => {
         const places = destinationBox?.getPlaces();
         if (places && places[0]) {
             setDestination(places[0].formatted_address || '');
-            console.log(origin, destination)
-
         }
     };
-
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,18 +53,21 @@ export const RideForm = () => {
                 });
 
                 // Verifique se a resposta contém a estimativa com a polyline
-                if (response.data.routeResponse.polyline?.encodedPolyline) {
+                if (response.data.routeResponse) {
+                    // Passa dados via state do navigate
                     navigate('/ride/estimate', {
                         state: {
                             origin,
                             destination,
                             customerId,
-                            polyline: response.data.routeResponse.polyline?.encodedPolyline,
+                            response: response.data.routeResponse,
+                            options: response.data.options
                         },
                     });
                 } else {
                     setErrorMessage('Polyline não encontrada na resposta da API.');
                 }
+                console.log(response)
             } catch (error) {
                 console.error('Erro ao estimar a corrida:', error);
                 setErrorMessage('Erro ao enviar os dados. Tente novamente.');
@@ -80,40 +80,36 @@ export const RideForm = () => {
     };
 
     return (
-
         <LoadScript googleMapsApiKey={api} libraries={['places']}>
             <div className='background'>
-
                 <form onSubmit={handleSubmit}>
                     <div className='containerForm'>
-                        <h1 style={{ textAlign: "center", fontSize: "22px", color: ' rgb(224, 216, 216)' }}>Selecione seu trajeto</h1>
+                        <h1 style={{ textAlign: 'center', fontSize: '22px', color: 'rgb(224, 216, 216)' }}>
+                            Selecione seu trajeto
+                        </h1>
                         <StandaloneSearchBox onLoad={onLoadOrigin} onPlacesChanged={onOriginChanged}>
                             <div className='itensForm'>
                                 <label>Origem:</label>
                                 <input value={origin} onChange={(ref) => setOrigin(ref.target.value)} required />
                             </div>
-
                         </StandaloneSearchBox>
-                        <StandaloneSearchBox onLoad={onLoadDestination} onPlacesChanged={onDestinationChanged} >
-
+                        <StandaloneSearchBox onLoad={onLoadDestination} onPlacesChanged={onDestinationChanged}>
                             <div className='itensForm'>
                                 <label>Destino:</label>
-                                <input value={destination} onChange={(e) => setDestination(e.target.value)} required />
+                                <input value={destination} onChange={(ref) => setDestination(ref.target.value)} required />
                             </div>
                         </StandaloneSearchBox>
                         <div className='itensForm'>
                             <label>Usuário:</label>
-                            <input value={customerId} onChange={(e) => setCustomerId(e.target.value)} required />
+                            <input value={customerId} onChange={(ref) => setCustomerId(ref.target.value)} required />
                         </div>
                         <button type="submit" disabled={loading}>
-                            <p>
-                                {loading ? 'Carregando...' : 'Estimar'}
-                            </p>
+                            <p>{loading ? 'Carregando...' : 'Estimar'}</p>
                         </button>
                     </div>
                     {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
                 </form>
-            </div >
+            </div>
         </LoadScript>
     );
 };

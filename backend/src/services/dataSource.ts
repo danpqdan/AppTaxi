@@ -13,30 +13,20 @@ console.log(process.env.DB_USERNAME); // Deve imprimir "admin"
 
 const isTestEnv = process.env.NODE_ENV === 'test';
 
-// const createDatabaseIfNotExists = async () => {
-//   const isTestEnv = process.env.NODE_ENV === 'test';
-//   const host = isTestEnv ? process.env.TEST_DB_HOST : process.env.DB_HOST;
-//   const port = isTestEnv ? process.env.TEST_DB_PORT ?? '3306' : process.env.DB_PORT ?? '3306';
-//   const username = isTestEnv ? process.env.TEST_DB_USERNAME : process.env.DB_USERNAME;
-//   const password = isTestEnv ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD;
-//   const database = isTestEnv ? process.env.TEST_DB_NAME : process.env.DB_NAME;
+// export const dataSource = new DataSource({
+//   type: 'mysql',
+//   host: 'localhost',  // Endereço local do banco de dados
+//   port: 3306,  // Porta padrão do MySQL
+//   username: 'root',  // Usuário do banco de dados local
+//   password: 'admin',  // Senha do banco de dados local
+//   database: 'app_taxi',  // Nome do banco de dados local
+//   charset: 'utf8mb4_unicode_ci',  // Charset, ajustado para compatibilidade
+//   synchronize: true,  // Atenção ao usar em produção, pois pode alterar esquemas automaticamente
+//   logging: true,  // Habilita o log das queries SQL para depuração
+//   dropSchema: false,  // Evita que o esquema do banco seja apagado
+//   entities: [Driver, Review, Riders, Customer],  // Entidades que você está utilizando
+// });
 
-//   try {
-//     const connection = await mysql.createConnection({
-//       host,
-//       port: parseInt(port, 10),
-//       user: username,
-//       password,
-//     });
-
-//     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-//     console.log(`Banco de dados '${database}' criado/verificado com sucesso.`);
-//     await connection.end();
-//   } catch (error) {
-//     console.error('Erro ao criar/verificar o banco de dados:', error);
-//     throw error;
-//   }
-// };
 
 // Antes de inicializar o DataSource, garanta que o banco exista
 

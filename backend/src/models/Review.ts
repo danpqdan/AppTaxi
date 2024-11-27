@@ -14,9 +14,9 @@ export class Review {
 
     @ManyToOne(() => Driver, (driver) => driver.reviews)
     @JoinColumn({ name: 'driver_id' })
-    driver!: Driver;
+    driver!: number;
 
-    constructor(id: number, rating: number, comment: string, driver: Driver) {
+    constructor(id: number, rating: number, comment: string, driver: number) {
         this.id = id;
         this.rating = rating;
         this.comment = comment;
