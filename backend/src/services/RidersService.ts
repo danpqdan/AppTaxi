@@ -1,3 +1,4 @@
+import { Customer } from "../models/Customer";
 import { Riders } from "../models/Riders";
 import { CustomerService } from "./CustomerService";
 import { dataSource } from "./DataSource";
@@ -9,14 +10,15 @@ import { RiderNotFound } from "./exceptionHandler/exceptionRide";
 
 export class RidersService {
     private static riderRepository = dataSource.getRepository(Riders);
+    private static customerRiderRepository = dataSource.getRepository(Customer);
+
 
     static async patchRider(ride: Riders) {
-        // Perform the update
-        await this.riderRepository.update(
-            { id: ride.id }, // Filter by ID
-            { ...ride }       // Spread the rider data to update
-        );
 
+        await this.riderRepository.update(
+            { id: ride.id },
+            { ...ride }
+        );
         // Fetch the updated rider record
         const updatedRide = await this.riderRepository.findOne({ where: { id: ride.id } });
 
@@ -24,26 +26,14 @@ export class RidersService {
     }
 
 
-
-    static async returnRiderForCustomer(customerId: string): Promise<Riders | any> {
-        try {
-            const customer = await CustomerService.findById(customerId);
-            if (!customer) {
-                throw new Error("Customer not found");
-            }
-            const rider = await this.riderRepository.findOneBy({ costumerId: customer.id });
-
-            if (!rider) {
-                throw new RiderNotFound();
-            }
-
-            return rider;
-        } catch (error) {
-            console.log(error);
-            throw new InvalidDriver
+    static async getRideForcustomer(customerId: string): Promise<Riders[]> {
+        const customer = await this.customerRiderRepository.findOneBy({ customer_id: customerId })
+        const custumerData = await this.riderRepository.findBy({ id: customer?.id });
+        if (!custumerData) {
+            throw new RiderNotFound
         }
+        return custumerData;
     }
-
 
     static async createRider(rider: Riders): Promise<Riders> {
         try {

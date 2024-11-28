@@ -4,11 +4,19 @@ import { dataSource } from "./DataSource";
 import { DistanceInvalid, DriverNotFound } from "./exceptionHandler/exceptionDriver";
 import { RiderNotFound } from "./exceptionHandler/exceptionRide";
 import { ErrorInvalidRequest, SuccessResponse } from "./exceptionHandler/exceptionRequest";
-import { Driver } from "models/Driver";
+import { Driver } from "../models/Driver";
+import { RidersService } from "./RidersService";
 
 export class CustomerService {
     private static customerRiderRepository = dataSource.getRepository(Customer);
     private static riderRepository = dataSource.getRepository(Riders);
+
+    static async save(costumer: Customer) {
+        const customer = new Customer(costumer.customer_id);
+        await this.customerRiderRepository.save(customer);
+
+        if (!costumer) throw new ErrorInvalidRequest
+    }
 
     static async findById(customerId: string): Promise<Customer | null> {
         const custumerData = await this.customerRiderRepository.findOneBy({ customer_id: customerId });
@@ -19,7 +27,7 @@ export class CustomerService {
     }
 
 
-    static async patchRiderForCustomer(rider: Riders, driver: Driver, customerId: string): Promise<SuccessResponse> {
+    static async getCustomer(rider: Riders, driver: Driver, customerId: string): Promise<SuccessResponse> {
         try {
             if (rider.distance == 0) {
                 throw new DistanceInvalid();
@@ -32,8 +40,8 @@ export class CustomerService {
             rider.value = rider.distance * driver.tax;
 
             // Atualizar o cliente com o rider
-            const customerPatch = await CustomerService.getRideForcustomer(customerId);
-            rider.costumerId?.includes(customerPatch.customer_id);
+            const customerPatch = await RidersService.getRideForcustomer(customerId);
+            // rider.costumerId?.includes();
 
             const riderFinish = await this.riderRepository.save(rider);
 
@@ -48,11 +56,5 @@ export class CustomerService {
 
 
 
-    static async getRideForcustomer(customerId: string): Promise<Customer> {
-        const custumerData = await this.customerRiderRepository.findOneBy({ customer_id: customerId });
-        if (!custumerData) {
-            throw new RiderNotFound
-        }
-        return custumerData;
-    }
+
 }

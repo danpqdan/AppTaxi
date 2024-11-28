@@ -18,7 +18,7 @@ export class DriverServices {
             const listDrivers = await this.driverRepository.find({
                 relations: ['reviews'], // Carrega as revisões associadas a cada motorista
             });
-
+    
             // Retorne a lista de motoristas com os reviews
             return listDrivers;
         } catch (error) {
@@ -26,7 +26,7 @@ export class DriverServices {
             throw new Error('Erro ao buscar motoristas');
         }
     }
-
+    
 
     static async createDriverScript(drivers: Driver[]): Promise<Driver[]> {
         try {

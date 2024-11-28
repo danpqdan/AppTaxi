@@ -16,7 +16,7 @@ import { RidersService } from './services/RidersService';
 const cors = require('cors')
 const express = require('express')
 const app = express()
-app.use(cors);
+app.use(cors());
 app.use(express.json())
 
 app.use(cors({
@@ -70,23 +70,32 @@ interface CustomerRides {
 
 app.post('/ride/estimate', async (
     req: Request<{}, {}, { customerId: string, origin: string, destination: string }>,
-    res: Response) => {
+    res: Response
+) => {
     try {
         const { customerId, origin, destination } = req.body;
-        const returnedAllCoordenates = await RidersController.returnGetDirections(req.body.origin, req.body.destination);
-        const customerRequest = await new Customer(customerId, [])
-        const returnedRouteForCostumer = await RidersController.returnRouteRequest(returnedAllCoordenates, origin, destination);
-        if (!returnedAllCoordenates || !returnedAllCoordenates) {
-            return new ErrorInvalidRequest;
+        const returnedAllCoordenates = await RidersController.returnGetDirections(origin, destination);
+
+        const rider = new Riders(origin, destination, 0, '');
+
+
+        // Verificando as coordenadas retornadas
+        if (!returnedAllCoordenates) {
+            throw new Error("Invalid coordinates returned");
         }
 
+        // Obtendo a rota para o cliente
+        const returnedRouteForCostumer = await RidersController.returnRouteRequest(returnedAllCoordenates, origin, destination);
+
+        // Enviando a resposta
         console.log(returnedRouteForCostumer);
-        res.status(200).json(returnedRouteForCostumer)
+        res.status(200).json(returnedRouteForCostumer);
     } catch (error) {
-        console.log(error)
-        res.status(500).json(new ErrorInter)
+        console.log(error);
+        res.status(500).json(new ErrorInter);
     }
 });
+
 
 app.patch('/ride/confirme', async (req: Request<{}, {}, { ride: RequestRideForCustomer }>, res: Response) => {
     try {
@@ -96,7 +105,7 @@ app.patch('/ride/confirme', async (req: Request<{}, {}, { ride: RequestRideForCu
             res.status(400).json(new ErrorInvalidRequest());
         }
 
-        const driver = await DriverServices.findById(ride.driver.id);
+        const driver: Driver | null = await DriverServices.findById(ride.driver.id);
         if (!driver) {
             res.status(404).json(new DriverNotFound(ride.driver.name));
         }
@@ -115,75 +124,25 @@ app.patch('/ride/confirme', async (req: Request<{}, {}, { ride: RequestRideForCu
     }
 });
 
-
-app.post('/driver', async (req: Request<{}, {}, DriverRequest>, res: Response) => {
+app.get('/ride/:customer_id', async (req: Request, res: Response) => {
     try {
-        const { name, description, car, tax, km_lowest } = req.body;
-        // Verificar se os dados necessários foram passados
-        if (!name || !car || tax == null || isStringObject(tax) || km_lowest == null) {
-            return res.status(400).json({ message: 'Name, car, tax(Should be number) e KM lowest its need' });
+        const { customer_id } = req.params;
+
+        if (!customer_id) {
+            return res.status(400).json({ error: 'Customer ID is required' });
         }
-        if (tax <= 0 || tax > 50) {
-            return res.status(400).json({ message: 'Verify your tax! Max: 50 & min: 1' })
+
+        const rides = await RidersService.getRideForcustomer(customer_id);
+
+        if (rides.length === 0) {
+            return res.status(404).json({ message: 'No rides found for this customer' });
         }
-        const newDriver = new Driver(name, description!, car, parseFloat(tax.toFixed(2)), km_lowest);
-        const driver = DriverServices.createDriver(newDriver)
-        return res.status(200).json(new SuccessResponse)
+        return res.status(200).json({ customer_id, rides });
     } catch (error) {
-        console.log(error)
-        res.status(400).json(new ErrorInvalidRequest)
+        console.error('Error fetching rides:', error);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-
-app.get('/ride/:customer_id', async (req: Request, res: Response): Promise<CustomerRides | Customer | void> => {
-    const customerId = req.params.customer_id;
-    const driverId = req.query.driver_id ? parseInt(req.query.driver_id as string, 10) : undefined;
-
-    try {
-        const customer = await CustomerService.getRideForcustomer(customerId);
-
-        if (driverId !== undefined) {
-            const ride = await RidersService.returnRiderForDriver(driverId);
-            const customerRides: CustomerRides = {
-                customer_id: customerId,
-                rides: [
-                    {
-                        id: ride.id,
-                        date: ride.date,
-                        origin: ride.origin,
-                        destination: ride.destination,
-                        distance: ride.distance,
-                        duration: ride.duration,
-                        driver: {
-                            name: customer.customer_id
-                        },
-                        value: ride.value!,
-                    },
-                ],
-            };
-            res.status(200).json(customerRides);
-            return customerRides; // Retorno explícito
-        }
-
-        if (!customer || (Array.isArray(customer) && customer.length === 0)) {
-            const error = new InvalidDriver();
-            res.status(400).json(error);
-            return; // Não há valor para retornar
-        }
-
-        res.status(200).json(customer);
-        return customer; // Retorno explícito
-    } catch (error) {
-        console.error(error);
-        const internalError = new ErrorInter();
-        res.status(500).json(internalError);
-        return; // Não há valor para retornar em caso de erro
-    }
-});
-
-
-
 
 
 // Rota para buscar um motorista pelo ID
@@ -231,6 +190,25 @@ app.get('/drivers/:id', async (req: Request, res: Response): Promise<Response> =
             new ErrorInter
         }
     });
+
+app.post('/driver', async (req: Request<{}, {}, DriverRequest>, res: Response) => {
+    try {
+        const { name, description, car, tax, km_lowest } = req.body;
+        // Verificar se os dados necessários foram passados
+        if (!name || !car || tax == null || isStringObject(tax) || km_lowest == null) {
+            return res.status(400).json({ message: 'Name, car, tax(Should be number) e KM lowest its need' });
+        }
+        if (tax <= 0 || tax > 50) {
+            return res.status(400).json({ message: 'Verify your tax! Max: 50 & min: 1' })
+        }
+        const newDriver = new Driver(name, description!, car, parseFloat(tax.toFixed(2)), km_lowest);
+        const driver = DriverServices.createDriver(newDriver)
+        return res.status(200).json(new SuccessResponse)
+    } catch (error) {
+        console.log(error)
+        res.status(400).json(new ErrorInvalidRequest)
+    }
+});
 
 startServer();
 app.listen(8080, () => {

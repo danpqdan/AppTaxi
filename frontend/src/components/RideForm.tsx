@@ -101,7 +101,7 @@ export const RideForm = () => {
                         </StandaloneSearchBox>
                         <div className='itensForm'>
                             <label>Usuário:</label>
-                            <input value={customerId} onChange={(ref) => setCustomerId(ref.target.value)} required />
+                            <input value={customerId} onChange={(e) => setCustomerId(e.target.value)} required />
                         </div>
                         <button type="submit" disabled={loading}>
                             <p>{loading ? 'Carregando...' : 'Estimar'}</p>
