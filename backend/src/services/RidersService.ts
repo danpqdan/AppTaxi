@@ -1,10 +1,9 @@
 import { Customer } from "../models/Customer";
 import { Riders } from "../models/Riders";
-import { CustomerService } from "./CustomerService";
 import { dataSource } from "./DataSource";
 import { DriverServices } from "./DriverService";
-import { DistanceInvalid, InvalidDriver } from "./exceptionHandler/exceptionDriver";
-import { ErrorInvalidRequest } from "./exceptionHandler/exceptionRequest";
+import { DistanceInvalid } from "./exceptionHandler/exceptionDriver";
+import { ErrorInvalidRequest, SuccessResponse } from "./exceptionHandler/exceptionRequest";
 import { RiderNotFound } from "./exceptionHandler/exceptionRide";
 
 
@@ -13,34 +12,43 @@ export class RidersService {
     private static customerRiderRepository = dataSource.getRepository(Customer);
 
 
-    static async patchRider(ride: Riders) {
-
-        await this.riderRepository.update(
-            { id: ride.id },
-            { ...ride }
-        );
-        // Fetch the updated rider record
-        const updatedRide = await this.riderRepository.findOne({ where: { id: ride.id } });
-
-        return updatedRide;
+    static async patchRider(ride: Riders): Promise<SuccessResponse> {
+        try {
+            const updateRide = await this.riderRepository.update(
+                { id: ride.id },
+                { ...ride }
+            );
+            if (!updateRide) { throw new ErrorInvalidRequest }
+            return new SuccessResponse;
+        } catch {
+            throw new ErrorInvalidRequest
+        }
     }
 
 
     static async getRideForcustomer(customerId: string): Promise<Riders[]> {
         const customer = await this.customerRiderRepository.findOneBy({ customer_id: customerId })
-        const custumerData = await this.riderRepository.findBy({ id: customer?.id });
-        if (!custumerData) {
+        const customerData = await this.riderRepository.find({
+            where: { costumerId: customer!.id },
+            order: {
+                date: 'DESC',
+            }
+        });
+
+        if (!customerData) {
             throw new RiderNotFound
         }
-        return custumerData;
+
+        return customerData;
     }
 
-    static async createRider(rider: Riders): Promise<Riders> {
+    static async saveRider(rider: Riders) {
         try {
-            if (rider.distance != 0) {
+            if (rider.distance < 0) {
                 throw new DistanceInvalid
             }
-            return rider;
+
+            await this.riderRepository.save(rider);
         } catch (error) {
             console.log(error)
             throw new ErrorInvalidRequest

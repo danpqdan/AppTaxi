@@ -18,15 +18,14 @@ export class DriverServices {
             const listDrivers = await this.driverRepository.find({
                 relations: ['reviews'], // Carrega as revisões associadas a cada motorista
             });
-    
+
             // Retorne a lista de motoristas com os reviews
             return listDrivers;
         } catch (error) {
-            console.error('Erro ao buscar motoristas com reviews:', error);
-            throw new Error('Erro ao buscar motoristas');
+            throw new DriverNotFound("Driver not Found");
         }
     }
-    
+
 
     static async createDriverScript(drivers: Driver[]): Promise<Driver[]> {
         try {
@@ -66,11 +65,11 @@ export class DriverServices {
     }
 
 
-    static async findById(id: number): Promise<Driver> {
+    static async findById(driverId: number): Promise<Driver> {
         try {
-            const driver = await this.driverRepository.findOne({ where: { id } });
+            const driver = await this.driverRepository.findOneBy({ id: driverId })
             if (!driver) {
-                throw new DriverNotFoundWithId(id)
+                throw new DriverNotFound("Driver not Found")
             }
             return driver;
         } catch (err) {
@@ -137,9 +136,9 @@ export class DriverServices {
 
 
 
-    static async findForKmLowest(rider: Riders): Promise<Driver[]> {
+    static async findForKmLowest(km: number): Promise<Driver[]> {
         const drivers = await this.driverRepository.find({
-            where: { km_lowest: LessThanOrEqual(rider.distance) },
+            where: { km_lowest: LessThanOrEqual(km) },
             relations: ['reviews'], // Carrega as revisões associadas aos motoristas
         });
 
@@ -152,7 +151,6 @@ export class DriverServices {
             drivers
                 .sort((a, b) => a.km_lowest - b.km_lowest) // Ordenando os motoristas pelo km_lowest
                 .map(async (driver) => {
-                    // Criando uma instância de Driver com as informações necessárias, incluindo as revisões
                     const driverInstance = new Driver(
                         driver.name,
                         driver.description || '', // Garantindo que 'description' tenha um valor

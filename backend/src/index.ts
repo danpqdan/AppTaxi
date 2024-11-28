@@ -63,36 +63,28 @@ interface CustomDriver {
     name: string
 }
 
-interface CustomerRides {
-    customer_id: string;
-    rides: Ride[];
-}
-
 app.post('/ride/estimate', async (
-    req: Request<{}, {}, { customerId: string, origin: string, destination: string }>,
+    req: Request<{}, {}, { customer_id: string, origin: string, destination: string }>,
     res: Response
 ) => {
     try {
-        const { customerId, origin, destination } = req.body;
+        const { customer_id, origin, destination } = req.body;
+        const customer = await CustomerService.getCustomerID(customer_id)
         const returnedAllCoordenates = await RidersController.returnGetDirections(origin, destination);
 
-        const rider = new Riders(origin, destination, 0, '');
-
-
         // Verificando as coordenadas retornadas
-        if (!returnedAllCoordenates) {
-            throw new Error("Invalid coordinates returned");
-        }
+        if (!returnedAllCoordenates) { throw new Error("Invalid coordinates returned"); }
 
         // Obtendo a rota para o cliente
         const returnedRouteForCostumer = await RidersController.returnRouteRequest(returnedAllCoordenates, origin, destination);
-
+        const rider = new Riders(origin, destination, returnedRouteForCostumer.distanceInKm, returnedRouteForCostumer.durationInMin, customer.id, 0);
+        await RidersService.saveRider(rider)
         // Enviando a resposta
         console.log(returnedRouteForCostumer);
-        res.status(200).json(returnedRouteForCostumer);
+        return res.status(200).json(returnedRouteForCostumer);
     } catch (error) {
         console.log(error);
-        res.status(500).json(new ErrorInter);
+        return res.status(500).json(new ErrorInter);
     }
 });
 
@@ -100,27 +92,25 @@ app.post('/ride/estimate', async (
 app.patch('/ride/confirme', async (req: Request<{}, {}, { ride: RequestRideForCustomer }>, res: Response) => {
     try {
         const { ride } = req.body;
-
         if (!ride.origin || !ride.destination || !ride.customer_id || ride.origin === ride.destination) {
-            res.status(400).json(new ErrorInvalidRequest());
+            return res.status(400).json(new ErrorInvalidRequest());
         }
-
-        const driver: Driver | null = await DriverServices.findById(ride.driver.id);
-        if (!driver) {
-            res.status(404).json(new DriverNotFound(ride.driver.name));
+        const rideFind = await RidersService.getRideForcustomer(ride.customer_id)
+        const driver: Driver = await DriverServices.findById(ride.driver.id);
+        if (!driver || driver.id != ride.driver.id || driver.name != ride.driver.name) {
+            return res.status(404).json(new DriverNotFound(ride.driver.name));
         }
-
-        if (ride.distance < driver.km_lowest) {
-            res.status(406).json(new DistanceInvalid());
+        if (rideFind[0].distance < driver.km_lowest) {
+            return res.status(406).json(new DistanceInvalid());
         }
-
-        const rider = new Riders(ride.origin, ride.destination, ride.distance, ride.duration);
-        console.log(rider);
-
-        res.status(200).json(new SuccessResponse());
+        rideFind[0].origin, rideFind[0].destination, rideFind[0].distance, rideFind[0].duration,
+            rideFind[0].driver = driver.id, rideFind[0].value = driver.tax * rideFind[0].distance;
+        const updateRide = await RidersService.patchRider(rideFind[0])
+        if (updateRide.sucess_request != true) { new ErrorInter }
+        return res.status(200).json(new SuccessResponse());
     } catch (error) {
         console.error(error);
-        res.status(500).json(new ErrorInter());
+        return res.status(400).json(new SuccessResponse(false));
     }
 });
 
@@ -131,12 +121,8 @@ app.get('/ride/:customer_id', async (req: Request, res: Response) => {
         if (!customer_id) {
             return res.status(400).json({ error: 'Customer ID is required' });
         }
-
         const rides = await RidersService.getRideForcustomer(customer_id);
 
-        if (rides.length === 0) {
-            return res.status(404).json({ message: 'No rides found for this customer' });
-        }
         return res.status(200).json({ customer_id, rides });
     } catch (error) {
         console.error('Error fetching rides:', error);
@@ -152,7 +138,6 @@ app.get('/drivers/:id', async (req: Request, res: Response): Promise<Response> =
     if (isNaN(id)) {
         return res.status(400).json({ message: 'ID inválido' });
     }
-
     const driver = await DriverServices.findById(id); // Usando o método 'findById'
     if (driver) {
         return res.json(driver);

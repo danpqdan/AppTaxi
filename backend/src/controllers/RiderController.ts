@@ -32,36 +32,51 @@ export class RidersController {
 
     }
 
-
-
-    static async returnRouteRequest(coordinates: Coordinates, origin: string, destination: string): Promise<any> {
+    static async returnRouteRequest(coordinates: Coordinates, origin: string, destination: string) {
         const dataReturnGoogle = await setParametersForSearch(coordinates);
         const route = dataReturnGoogle.routes[0];
         const distance = route.distanceMeters;
-        const duration = route.duration;
-
+        const durationInMin = convertDuration(route.duration);
         const distanceInKm = distance / 1000;
-
 
         const newTrip = new Riders(
             origin,
             destination,
             distanceInKm,
-            duration
+            durationInMin,
+            0,
+            0
         )
+        const driversFind = await DriverServices.findForKmLowest(distanceInKm);
+        for (const driver of driversFind) {
+            driver.value = driver.tax * distanceInKm
+        }
 
-        console.log(newTrip)
-        //const rider = await RidersService.createRider(newTrip);
-        const driversFind = await DriverServices.findForKmLowest(newTrip);
-        driversFind.forEach(driver => { driver.tax = newTrip.distance });
 
         return {
             coordinates,
-            distance,
-            duration,
+            distanceInKm,
+            durationInMin,
             options: driversFind,
             routeResponse: route
         }
     };
-
 }
+function convertDuration(duration: string): string {
+    // Extrai os segundos da string (removendo a palavra "segundos")
+    const seconds = parseInt(duration.replace('s', '').trim(), 10);
+
+    // Converte os segundos para minutos e o restante em segundos
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    // Formata o resultado
+    if (minutes > 0 && remainingSeconds > 0) {
+        return `${minutes} m e ${remainingSeconds} s`;
+    } else if (minutes > 0) {
+        return `${minutes} m`;
+    } else {
+        return `${remainingSeconds} s`;
+    }
+}
+

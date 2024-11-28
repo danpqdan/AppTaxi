@@ -21,6 +21,9 @@ export class Driver {
     @Column('int')
     km_lowest: number;
 
+    @Column('decimal')
+    value?: number | undefined;
+
     @OneToMany(() => Review, (review) => review.driver, { cascade: true })
     reviews?: Review[];
 

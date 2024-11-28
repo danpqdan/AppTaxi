@@ -27,26 +27,14 @@ export class CustomerService {
     }
 
 
-    static async getCustomer(rider: Riders, driver: Driver, customerId: string): Promise<SuccessResponse> {
+    static async getCustomerID(customerId: string): Promise<Customer> {
         try {
-            if (rider.distance == 0) {
-                throw new DistanceInvalid();
+            const findCustom = await this.customerRiderRepository.findOneBy({ customer_id: customerId })
+            if (!findCustom || findCustom == null) {
+                const newRider = new Customer(customerId)
+                return await this.customerRiderRepository.save(newRider);
             }
-            if (driver.id == null) {
-                throw new DriverNotFound("Invalid: ");
-            }
-
-            // Calcular o valor do rider com base na distância e taxa do driver
-            rider.value = rider.distance * driver.tax;
-
-            // Atualizar o cliente com o rider
-            const customerPatch = await RidersService.getRideForcustomer(customerId);
-            // rider.costumerId?.includes();
-
-            const riderFinish = await this.riderRepository.save(rider);
-
-            console.log(riderFinish, customerPatch);
-            return new SuccessResponse();
+            return findCustom!;
         } catch (error) {
             console.log(error);
             throw new ErrorInvalidRequest(); // Lançando o erro corretamente
