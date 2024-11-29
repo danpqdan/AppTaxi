@@ -9,6 +9,7 @@ export interface Coordinates {
 }
 
 
+
 export class RidersController {
     static async returnGetDirections(addressOrigin: string, addressDestination: string): Promise<Coordinates> {
         try {
@@ -48,9 +49,7 @@ export class RidersController {
             0
         )
         const driversFind = await DriverServices.findForKmLowest(distanceInKm);
-        for (const driver of driversFind) {
-            driver.value = driver.tax * distanceInKm
-        }
+        
 
 
         return {

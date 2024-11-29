@@ -9,19 +9,19 @@ export const RideForm = () => {
 
     const [origin, setOrigin] = useState('');
     const [destination, setDestination] = useState('');
-    const [customerId, setCustomerId] = useState('');
+    const [custumerId, setCustomerId] = useState('');
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
     const [originBox, setOriginBox] = useState<google.maps.places.SearchBox>();
     const [destinationBox, setDestinationBox] = useState<google.maps.places.SearchBox>();
 
-    const onLoadOrigin = (ref: google.maps.places.SearchBox) => {
-        setOriginBox(ref);
+    const onLoadOrigin = (e: google.maps.places.SearchBox) => {
+        setOriginBox(e);
     };
 
-    const onLoadDestination = (ref: google.maps.places.SearchBox) => {
-        setDestinationBox(ref);
+    const onLoadDestination = (e: google.maps.places.SearchBox) => {
+        setDestinationBox(e);
     };
 
     const onOriginChanged = () => {
@@ -41,7 +41,7 @@ export const RideForm = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (origin && destination && customerId) {
+        if (origin && destination && custumerId) {
             setLoading(true);
             setErrorMessage('');
 
@@ -49,7 +49,11 @@ export const RideForm = () => {
                 const response = await axios.post('http://localhost:8080/ride/estimate', {
                     origin,
                     destination,
-                    customerId,
+                    customer_id: custumerId,
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                 });
 
                 // Verifique se a resposta contém a estimativa com a polyline
@@ -59,7 +63,7 @@ export const RideForm = () => {
                         state: {
                             origin,
                             destination,
-                            customerId,
+                            custumerId,
                             response: response.data.routeResponse,
                             options: response.data.options
                         },
@@ -90,18 +94,18 @@ export const RideForm = () => {
                         <StandaloneSearchBox onLoad={onLoadOrigin} onPlacesChanged={onOriginChanged}>
                             <div className='itensForm'>
                                 <label>Origem:</label>
-                                <input value={origin} onChange={(ref) => setOrigin(ref.target.value)} required />
+                                <input value={origin} onChange={(e) => setOrigin(e.target.value)} required />
                             </div>
                         </StandaloneSearchBox>
                         <StandaloneSearchBox onLoad={onLoadDestination} onPlacesChanged={onDestinationChanged}>
                             <div className='itensForm'>
                                 <label>Destino:</label>
-                                <input value={destination} onChange={(ref) => setDestination(ref.target.value)} required />
+                                <input value={destination} onChange={(e) => setDestination(e.target.value)} required />
                             </div>
                         </StandaloneSearchBox>
                         <div className='itensForm'>
                             <label>Usuário:</label>
-                            <input value={customerId} onChange={(e) => setCustomerId(e.target.value)} required />
+                            <input value={custumerId} onChange={(e) => setCustomerId(e.target.value)} required />
                         </div>
                         <button type="submit" disabled={loading}>
                             <p>{loading ? 'Carregando...' : 'Estimar'}</p>

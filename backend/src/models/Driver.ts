@@ -27,8 +27,8 @@ export class Driver {
     @OneToMany(() => Review, (review) => review.driver, { cascade: true })
     reviews?: Review[];
 
-
-    constructor(name: string, description: string, car: string, tax: number, km_lowest: number) {
+    constructor(id: number, name: string, description: string, car: string, tax: number, km_lowest: number) {
+        this.id = id | 0;
         this.name = name;
         this.description = description;
         this.car = car;

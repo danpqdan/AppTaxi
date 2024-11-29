@@ -138,6 +138,7 @@ export class DriverServices {
 
     static async findForKmLowest(km: number): Promise<Driver[]> {
         const drivers = await this.driverRepository.find({
+            select: ['id', 'name', 'description', 'car', 'tax', 'km_lowest'],
             where: { km_lowest: LessThanOrEqual(km) },
             relations: ['reviews'], // Carrega as revisões associadas aos motoristas
         });
@@ -152,6 +153,7 @@ export class DriverServices {
                 .sort((a, b) => a.km_lowest - b.km_lowest) // Ordenando os motoristas pelo km_lowest
                 .map(async (driver) => {
                     const driverInstance = new Driver(
+                        driver.id,
                         driver.name,
                         driver.description || '', // Garantindo que 'description' tenha um valor
                         driver.car,
@@ -170,11 +172,8 @@ export class DriverServices {
 
                     // Retornando a instância do motorista
                     return driverInstance;
-                })
-        );
-
-        return sortedDrivers;
-
+                }));
+        return sortedDrivers
     } catch() {
         throw new ErrorInter;
     }

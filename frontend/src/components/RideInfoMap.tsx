@@ -1,8 +1,18 @@
 import '../App.css';
 
 import { APIProvider, Map, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
+import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+interface Driver {
+    id: number;
+    name: string;
+    car: string;
+    tax: number;
+    km_lowest: number;
+    value: number;
+    reviews: { rating: number, comment: string }
+}
 
 export default function RideInfoMap() {
     const api = import.meta.env.VITE_GOOGLE_API_KEY
@@ -35,7 +45,7 @@ function Diretions() {
     const location = useLocation();
     const { origin,
         destination,
-        customerId,
+        custumerId,
         response,
         options } = location.state || {};
     const routeLibrary = useMapsLibrary("routes");
@@ -50,9 +60,8 @@ function Diretions() {
         car: string;
         tax: number;
         value: number;
-    }[]>([]);
+    }>();
     const [isVisibleDriver, setIsVisibleDriver] = useState(false);
-    const [selectedDriver, setSelectedDriver] = useState<{ id: number; name: string } | null>(null);
     const selected = routes[routeIndex];
     const leg = selected?.legs[0];
 
@@ -64,24 +73,6 @@ function Diretions() {
     const toogleVisibilityDriver = () => {
         setIsVisibleDriver((prev) => !prev)
     }
-
-    const handdleSetDriver = (driver: { id: number; name: string }) => {
-        setSelectedDriver(driver);
-    };
-
-
-    // console.log(destination)
-    // console.log(customerId)
-    // console.log(origin)
-    // console.log(response)
-    console.log(options)
-
-    useEffect(() => {
-        if (options && options.length > 0) {
-            setDrivers(options);
-
-        }
-    }, [options]);
 
     useEffect(() => {
         if (!routeLibrary || !map) return;
@@ -109,44 +100,38 @@ function Diretions() {
         directionsRenderer.setRouteIndex(routeIndex);
     }, [routeIndex, directionsRenderer, routes]);
 
-    const confirmRide = async () => {
-        if (!selectedDriver) {
-            alert("Por favor, selecione um motorista.");
-            return;
-        }
 
+
+    const handleSubmit = async () => {
+        const driverid = drivers?.id;
+        const drivername = drivers?.name
+        const value = ((leg.distance?.value ?? 0) / 1000).toFixed(2);
         const data = {
-            customer_id: customerId,
-            origin: leg.start_address,
-            destination: leg.end_address,
-            distance: response.distance,
+            customer_id: custumerId,
+            origin: origin,
+            destination: destination,
+            distance: value,
             duration: response.duration,
-            driver: selectedDriver,
-            value: response.value,
+            driver: { name: drivername, id: driverid },
+            value: drivers?.value,
         };
 
+        console.log('Dados a enviar:', data);  // Verifique no console os dados antes de enviar
+
+        // Função para enviar os dados ao servidor
         try {
-            const response = await fetch('', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
+            const response = await axios.patch('http://localhost:8080/ride/confirme', data, {
+                headers: { 'Content-Type': 'application/json' },
             });
-
-            if (!response.ok) {
-                throw new Error(`Erro ao confirmar a corrida: ${response.statusText}`);
-            }
-            console.log(response)
-
-            const result = await response.json();
-            console.log('Confirmação bem-sucedida:', result);
-        } catch (error) {
-            console.error('Erro:', error);
+            console.log('Motorista confirmado no servidor:', response.data);
+        } catch {
+            console.error('Erro ao confirmar motorista:');
         }
     };
 
-    console.log(routes)
+    console.log(options)
+
+
 
     if (!leg) return null;
 
@@ -180,25 +165,29 @@ function Diretions() {
                 {isVisibleDriver ? 'Alterar Rota' : 'Motoristas Disponíveis'}
             </button>
 
-            {isVisibleDriver && drivers.length > 0 ? (
+            {isVisibleDriver && options.length > 0 ? (
                 <ul>
-                    {drivers.map((driver) => (
-                        <li key={driver.id}> {/* Use driver.id como a chave única */}
-                            <button onClick={() => handdleSetDriver({ id: driver.id, name: driver.name })}>
-                                <p>Selecionar Motorista</p>
-                            </button>
-                            <p>Name: {driver.name}</p>
-                            <p>Carro: {driver.car}</p>
-                            <p>Taxa: R${driver.tax}</p>
-                            <p>Preço Total: R${driver.value}</p>
-                        </li>
+                    {options.map((drivers: Driver) => (
+                        <>
+                            <li key={options!.id}> {/* Usando driver.id como chave única */}
+                                <button onClick={() => setDrivers(drivers)}> {/* Passando o objeto completo para setDrivers */}
+                                    <p>Selecionar Motorista</p>
+                                </button>
+                                <p>Name: {drivers.name}</p>
+                                <p>Carro: {drivers.car}</p>
+                                <p>Taxa: R${drivers.tax}</p>
+                                <p>Preço Total: R${(drivers.value = (leg.distance!.value / 1000) * drivers.tax).toPrecision(2)}</p>
+                            </li>
+                        </>
                     ))}
                 </ul>
             ) : isVisibleDriver && (
                 <p>Nenhum motorista disponível no momento.</p>
             )}
 
-            <button onClick={confirmRide}>Confirmar Corrida</button>
+            <button onClick={handleSubmit}>
+                Confirmar Motorista
+            </button>
 
         </div>
 

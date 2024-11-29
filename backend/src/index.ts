@@ -1,28 +1,25 @@
 import { Request, Response } from 'express';
 import { isStringObject } from 'util/types';
 import { RidersController } from './controllers/RiderController';
-import { Customer } from './models/Customer';
 import { Driver } from './models/Driver';
 import { Review } from './models/Review';
 import { Riders } from './models/Riders';
 import { CustomerService } from './services/CustomerService';
 import { startServer } from './services/DataSource';
 import { DriverServices } from './services/DriverService';
-import { DistanceInvalid, DriverNotFound, InvalidDriver } from './services/exceptionHandler/exceptionDriver';
+import { DistanceInvalid, DriverNotFound } from './services/exceptionHandler/exceptionDriver';
 import { ErrorInter, ErrorInvalidRequest, SuccessResponse } from './services/exceptionHandler/exceptionRequest';
 import { ReviewService } from './services/ReviewService';
 import { RidersService } from './services/RidersService';
 
-const cors = require('cors')
-const express = require('express')
-const app = express()
-app.use(cors());
-app.use(express.json())
+const express = require('express');
+const cors = require('cors');
+const app = express();
 
+app.use(cors(), express.json());
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 interface DriverRequest {
@@ -60,6 +57,7 @@ interface Ride {
     value: number;
 }
 interface CustomDriver {
+    id: number
     name: string
 }
 
@@ -89,29 +87,29 @@ app.post('/ride/estimate', async (
 });
 
 
-app.patch('/ride/confirme', async (req: Request<{}, {}, { ride: RequestRideForCustomer }>, res: Response) => {
+app.patch('/ride/confirme', async (req: Request, res: Response) => {
     try {
-        const { ride } = req.body;
-        if (!ride.origin || !ride.destination || !ride.customer_id || ride.origin === ride.destination) {
+        const { customer_id, origin, destination, distance, duration, driver, value } = req.body;
+        if (!origin || !destination || !customer_id || origin === destination) {
             return res.status(400).json(new ErrorInvalidRequest());
         }
-        const rideFind = await RidersService.getRideForcustomer(ride.customer_id)
-        const driver: Driver = await DriverServices.findById(ride.driver.id);
-        if (!driver || driver.id != ride.driver.id || driver.name != ride.driver.name) {
-            return res.status(404).json(new DriverNotFound(ride.driver.name));
+        const rideFind = await RidersService.getRideForcustomer(customer_id)
+        const driverServer: Driver = await DriverServices.findById(driver.id);
+        if (!driver || driverServer.id != driver.id || driverServer.name != driver.name) {
+            return res.status(404).json(new DriverNotFound(driver.name));
         }
-        if (rideFind[0].distance < driver.km_lowest) {
+        if (rideFind[0].distance < driverServer.km_lowest) {
             return res.status(406).json(new DistanceInvalid());
         }
-        rideFind[0].origin, rideFind[0].destination, rideFind[0].distance, rideFind[0].duration,
-            rideFind[0].driver = driver.id, rideFind[0].value = driver.tax * rideFind[0].distance;
-        const updateRide = await RidersService.patchRider(rideFind[0])
-        if (updateRide.sucess_request != true) { new ErrorInter }
-        return res.status(200).json(new SuccessResponse());
+        rideFind[0].origin, rideFind[0].destination, rideFind[0].distance, duration,
+            rideFind[0].driver = driverServer.id, rideFind[0].value = value;
+const updateRide = await RidersService.patchRider(rideFind[0])
+if (updateRide.sucess_request != true) { new ErrorInter }
+return res.status(200).json(new SuccessResponse());
     } catch (error) {
-        console.error(error);
-        return res.status(400).json(new SuccessResponse(false));
-    }
+    console.error(error);
+    return res.status(400).json(new SuccessResponse(false));
+}
 });
 
 app.get('/ride/:customer_id', async (req: Request, res: Response) => {
@@ -186,7 +184,7 @@ app.post('/driver', async (req: Request<{}, {}, DriverRequest>, res: Response) =
         if (tax <= 0 || tax > 50) {
             return res.status(400).json({ message: 'Verify your tax! Max: 50 & min: 1' })
         }
-        const newDriver = new Driver(name, description!, car, parseFloat(tax.toFixed(2)), km_lowest);
+        const newDriver = new Driver(0, name, description!, car, parseFloat(tax.toFixed(2)), km_lowest);
         const driver = DriverServices.createDriver(newDriver)
         return res.status(200).json(new SuccessResponse)
     } catch (error) {
